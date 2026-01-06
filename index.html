@@ -1,793 +1,943 @@
 <!DOCTYPE html>
-<html lang="sk">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediTest 🩺</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title>MediTest - Medical Knowledge Assessment Platform</title>
     <style>
-        :root { --primary: #4f46e5; --bg: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%); --card: #ffffff; --opt-bg: #f8fafc; --opt-hover: #ffffff; --text: #1e293b; --border: #e2e8f0; --zoom: 1.0; }
-        [data-theme="dark"] { --bg: #0f172a; --card: #1e293b; --opt-bg: #334155; --opt-hover: #475569; --text: #f1f5f9; --border: #475569; }
-        
-        html { font-size: calc(16px * var(--zoom)); }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 120px; min-height: 100vh; overflow-x: hidden; }
-        .hidden { display: none !important; }
-
-        button, .cat-card, .streak-box, .theme-toggle, .zoom-control, .count-btn, .order-opt, .logo, .mode-btn { cursor: pointer; }
-        button:hover, .streak-box:hover, .theme-toggle:hover, .zoom-control:hover, .count-btn:hover, .order-opt:hover, .logo:hover { transform: scale(1.02); }
-
-        header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
-        [data-theme="dark"] header { background: rgba(30, 41, 59, 0.8); }
-
-        .logo { font-weight: 900; font-size: 2.2rem; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-        .tools { display: flex; gap: 1rem; align-items: center; }
-        
-        .zoom-control { display: flex; align-items: center; gap: 5px; background: var(--card); padding: 5px 10px; border-radius: 99px; border: 1px solid var(--border); }
-        .zoom-control input { width: 80px; cursor: pointer; }
-
-        /* TOOLTIPY */
-        .tooltip-container { position: relative; display: inline-flex; align-items: center; gap: 5px; cursor: help; }
-        .info-icon { font-size: 0.9rem; color: var(--primary); opacity: 0.7; }
-        .tooltip-text { 
-            visibility: hidden; width: 220px; background-color: #1e293b; color: #fff; text-align: center; 
-            border-radius: 8px; padding: 10px; position: absolute; z-index: 9999; 
-            top: 150%; 
-            left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 0.85rem; font-weight: normal;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3); pointer-events: none;
-        }
-        .tooltip-text::after {
-            content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px;
-            border-width: 5px; border-style: solid; border-color: transparent transparent #1e293b transparent;
-        }
-        .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
-        
-        .streak-box { background: var(--card); border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; }
-        .streak-box i { color: #f97316; font-size: 1.2rem; }
-
-        .theme-toggle { background: var(--card); border: 1px solid var(--border); width: 45px; height: 45px; border-radius: 12px; color: var(--text); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-
-        main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-
-        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
-        .cat-card { background: var(--card); padding: 2rem; border-radius: 24px; border: 1px solid var(--border); text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .cat-card:hover { transform: scale(1.05); border-color: var(--primary); }
-        .cat-card i { font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; display: block; }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 1rem; margin-bottom: 2rem; align-items: stretch; }
-        .stat-card { background: var(--card); padding: 1rem; border-radius: 20px; border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
-        .rank-badge { background: linear-gradient(135deg, var(--primary), #818cf8); color: white; border: none; }
-        .rank-badge b { color: white; font-size: 2.2rem; }
-
-        .q-card { background: var(--card); border-radius: 28px; padding: 2rem; margin-bottom: 2rem; border: 2px solid var(--border); position: relative; }
-        .star-toggle { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; color: #ccc; cursor: pointer; transition: color 0.2s; }
-        .star-toggle.active { color: #f59e0b; }
-
-        .opt { display: flex; align-items: center; padding: 1rem; border: 1px solid var(--border); border-radius: 16px; margin-top: 0.8rem; cursor: pointer; background: var(--opt-bg); font-weight: 600; }
-        .opt:hover { transform: scale(1.01); background: var(--opt-hover); border-color: var(--primary); }
-        .opt.selected { border-color: var(--primary); background: rgba(79, 70, 229, 0.1); color: var(--primary); }
-        
-        /* TRIEDY PRE VYHODNOTENIE */
-        .correct-hit { border-color: #10b981 !important; background: rgba(16, 185, 129, 0.15) !important; color: #065f46 !important; }
-        .wrong-hit { border-color: #ef4444 !important; background: rgba(239, 68, 68, 0.15) !important; color: #991b1b !important; }
-        .missed-hit { border-color: #f59e0b !important; border-style: dashed !important; background: rgba(245, 158, 11, 0.1) !important; color: #92400e !important; }
-        [data-theme="dark"] .correct-hit { color: #34d399 !important; background: rgba(16, 185, 129, 0.25) !important; }
-        [data-theme="dark"] .wrong-hit { color: #f87171 !important; background: rgba(239, 68, 68, 0.25) !important; }
-        [data-theme="dark"] .missed-hit { color: #fbbf24 !important; background: rgba(245, 158, 11, 0.15) !important; }
-        
-        .opt-icon { margin-left: auto; font-size: 1.2rem; }
-
-        /* KONFETY ANIMÁCIA */
-        @keyframes fall {
-            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-        }
-        .confetti {
-            position: fixed; top: -10vh; z-index: 9999; user-select: none; pointer-events: none;
-            animation-name: fall; animation-timing-function: linear;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .footer-nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 1000; display: flex; justify-content: center; }
-        #finish-trigger { background: var(--primary); color: white; border: none; padding: 1.2rem; border-radius: 99px; font-weight: 800; width: 100px; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
 
-        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--card); padding: 2rem; border-radius: 30px; text-align: center; max-width: 500px; width: 100%; border: 1px solid var(--border); position: relative; max-height: 90vh; overflow-y: auto; }
-        
-        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .mode-btn { padding: 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--opt-bg); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; font-size: 1.1rem; }
-        .mode-btn i { font-size: 2rem; color: var(--primary); }
-        .mode-btn:hover { border-color: var(--primary); background: var(--opt-hover); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        
-        .count-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; justify-content: center; }
-        .count-btn { padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--opt-bg); font-weight: bold; color: var(--text); flex: 1; min-width: 50px; }
-        .count-btn.active { background: var(--primary); color: white; }
-        
-        .custom-input { width: 80px; padding: 10px; border-radius: 12px; border: 2px solid var(--border); text-align: center; font-weight: bold; background: var(--card); color: var(--text); }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
 
-        .order-switch { display: flex; background: var(--opt-bg); border-radius: 15px; border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
-        .order-opt { flex: 1; padding: 12px; font-weight: bold; }
-        .order-opt.active { background: var(--primary); color: white; }
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
 
-        .start-btn { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 16px; width: 100%; font-weight: 800; font-size: 1.1rem; margin-top: 10px; }
-        .action-btn { background: var(--opt-bg); color: var(--text); border: 1px solid var(--border); padding: 1rem; border-radius: 16px; width: 100%; font-weight: 700; margin-top: 10px; }
-        
-        /* FOOTER ACTIONS PO TESTE */
-        .end-actions { margin-top: 40px; padding-top: 20px; border-top: 2px dashed var(--border); display: grid; gap: 10px; }
-        .end-actions h3 { margin-bottom: 10px; text-align: center; }
-        .big-action-btn { padding: 1.5rem; font-size: 1.2rem; font-weight: bold; border-radius: 20px; border: none; cursor: pointer; color: white; transition: transform 0.2s; }
-        .big-action-btn:hover { transform: scale(1.02); }
-        .btn-new { background: var(--primary); box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
-        .btn-retry { background: #f97316; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3); }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-        @media (max-width: 600px) {
-            .category-grid { grid-template-columns: 1fr; }
-            .mode-grid { grid-template-columns: 1fr; }
-            .end-actions { grid-template-columns: 1fr; }
+        .header-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .fire-streak {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .fire-icon {
+            font-size: 18px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .premium-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            color: #333;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            border-color: #667eea;
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Premium System */
+        .premium-section {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .premium-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .premium-benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .benefit-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .benefit-item::before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+            min-width: 25px;
+        }
+
+        /* Dashboard Stats */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Quiz Section */
+        .quiz-section {
+            margin-bottom: 30px;
+        }
+
+        .quiz-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .quiz-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .quiz-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .quiz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .quiz-card h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .quiz-card p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        /* Success Message */
+        .message {
+            display: none;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-right {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-
-<header>
-    <div class="logo" onclick="test.goHome()">MediTest 🩺</div>
-    <div class="tools">
-        <div class="zoom-control">
-            <i class="fas fa-search" style="font-size: 0.8rem; color: var(--primary)"></i>
-            <input type="range" min="0.8" max="1.5" step="0.1" value="1.0" oninput="test.updateZoom(this.value)">
-        </div>
-        
-        <div class="streak-box tooltip-container">
-            <i class="fas fa-fire"></i> <span id="streak-val">0</span>
-            <span class="tooltip-text"><b>Streak (Séria) 🔥</b><br>Počet dní v rade, kedy si urobil aspoň jeden test. Nepreruš to!</span>
-        </div>
-        
-        <button class="theme-toggle" onclick="test.toggleTheme()"><i class="fas fa-circle-half-stroke"></i></button>
-    </div>
-</header>
-
-<main id="view-dash">
-    <div class="stats-grid">
-        <div class="stat-card tooltip-container">
-            <small>Bio Úspešnosť 🌿 <i class="fas fa-circle-info info-icon"></i></small>
-            <b id="stat-bio">0%</b>
-            <span class="tooltip-text">Priemerná úspešnosť zo všetkých dokončených testov z Biológie.</span>
-        </div>
-        
-        <div class="stat-card rank-badge">
-            <small>Tvoj Rank 🏆</small>
-            <b id="rank-name">Začiatočník 🐣</b>
-            <span id="rank-progress" style="font-size: 0.8rem; opacity: 0.9">0 testov</span>
-        </div>
-        
-        <div class="stat-card tooltip-container">
-            <small>Chem Úspešnosť 🧪 <i class="fas fa-circle-info info-icon"></i></small>
-            <b id="stat-chem">0%</b>
-            <span class="tooltip-text">Priemerná úspešnosť zo všetkých dokončených testov z Chémie.</span>
-        </div>
-    </div>
-    
-    <div class="category-grid">
-        <div class="cat-card" onclick="test.openSetup('bio')"><i class="fas fa-dna"></i><b>Biológia 🧬</b></div>
-        <div class="cat-card" onclick="test.openSetup('chem')"><i class="fas fa-flask"></i><b>Chémia 🧪</b></div>
-        <div class="cat-card" onclick="test.openSetup('mix')"><i class="fas fa-vials"></i><b>Mix 🌀</b></div>
-    </div>
-</main>
-
-<main id="view-test" class="hidden"></main>
-
-<div id="test-footer" class="footer-nav hidden">
-    <button id="finish-trigger" onclick="test.finish()">0%</button>
-</div>
-
-<div id="setup-modal" class="modal hidden">
-    <div class="modal-content">
-        <div id="step-mode">
-            <h2 style="margin-bottom:20px">Vyber typ testu ⚙️</h2>
-            <div class="mode-grid">
-                <div class="mode-btn" onclick="test.selectMode('gen')">
-                    <i class="fas fa-shuffle"></i> Generovať test 🎲
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">🏥 MediTest</div>
+            <div class="header-right">
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <div id="userDisplay"></div>
+                    <div class="fire-streak" id="fireStreak" style="display: none;">
+                        <span class="fire-icon">🔥</span>
+                        <span id="streakCount">0</span>
+                    </div>
+                    <div id="premiumBadge" class="premium-badge" style="display: none;">
+                        ⭐ PREMIUM
+                    </div>
                 </div>
-                <div class="mode-btn" onclick="test.selectMode('err')">
-                    <i class="fas fa-triangle-exclamation"></i> Test z chýb ⚠️
-                </div>
-                <div class="mode-btn" onclick="test.selectMode('star')">
-                    <i class="fas fa-star"></i> Hviezdičky ⭐
-                </div>
-                <div class="mode-btn" onclick="test.selectMode('all')">
-                    <i class="fas fa-book-open"></i> Učenie sa 📚
+                <div class="auth-buttons" id="authButtons">
+                    <button class="btn-secondary" onclick="openLoginModal()">Login</button>
+                    <button class="btn-primary" onclick="openRegisterModal()">Sign Up</button>
                 </div>
             </div>
-            <button onclick="test.closeSetup()" style="background:transparent; border:none; color:var(--text); margin-top:10px; cursor:pointer">Zrušiť ❌</button>
-        </div>
+        </header>
 
-        <div id="step-config" class="hidden">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px">
-                <button onclick="test.backToModes()" style="background:transparent; border:none; font-size:1.2rem; cursor:pointer; color:var(--text)"><i class="fas fa-arrow-left"></i></button>
-                <h2 id="config-title">Nastavenie</h2>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Message Container -->
+            <div id="messageContainer"></div>
+
+            <!-- Hero Section -->
+            <div class="hero">
+                <h1>Welcome to MediTest</h1>
+                <p>Master Medical Knowledge with Interactive Quizzes and Premium Features</p>
             </div>
 
-            <div id="settings-gen">
-                <div class="order-switch">
-                    <div class="order-opt active" id="ord-random" onclick="test.setOrder('random')">🔀 Odpovede: Náhodne</div>
-                    <div class="order-opt" id="ord-orig" onclick="test.setOrder('original')">🔢 Odpovede: Pôvodné</div>
+            <!-- Dashboard Stats -->
+            <div class="stats-container" id="statsContainer" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value" id="quizzesTaken">0</div>
+                    <div class="stat-label">Quizzes Taken</div>
                 </div>
-                
-                <p style="font-size:0.9rem; font-weight:bold; margin-bottom:5px">Počet otázok:</p>
-                <div class="count-grid" id="count-btns"></div>
-                <input type="number" class="custom-input" id="custom-cnt-input" placeholder="Vlastné" min="1" oninput="test.setCustomCount(this.value)">
+                <div class="stat-card">
+                    <div class="stat-value" id="correctAnswers">0</div>
+                    <div class="stat-label">Correct Answers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracyScore">0%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="currentStreak">0</div>
+                    <div class="stat-label">Current Streak</div>
+                </div>
             </div>
 
-            <div id="settings-info" class="hidden" style="margin: 20px 0; color: var(--text); opacity: 0.8; font-size: 1.1rem;">
-                <span id="mode-desc">Popis módu...</span>
+            <!-- Premium Section -->
+            <div class="premium-section" id="premiumSection">
+                <h2>🌟 Premium Membership</h2>
+                <div class="premium-benefits">
+                    <div class="benefit-item">Unlimited Quizzes</div>
+                    <div class="benefit-item">Advanced Analytics</div>
+                    <div class="benefit-item">Custom Study Plans</div>
+                    <div class="benefit-item">Priority Support</div>
+                    <div class="benefit-item">Offline Access</div>
+                    <div class="benefit-item">Fire Streak Tracking</div>
+                </div>
+                <button class="btn-primary" onclick="upgradeToPremium()" id="premiumBtn">Upgrade to Premium</button>
             </div>
 
-            <button class="start-btn" onclick="test.start()">SPUSTIŤ TEST 🚀</button>
+            <!-- Quiz Section -->
+            <div class="quiz-section">
+                <h2>📚 Medical Quizzes</h2>
+                <div class="quiz-cards" id="quizCards">
+                    <div class="quiz-card" onclick="startQuiz('anatomy')">
+                        <h3>🫀 Anatomy</h3>
+                        <p>Test your knowledge of human body systems</p>
+                    </div>
+                    <div class="quiz-card" onclick="startQuiz('pharmacology')">
+                        <h3>💊 Pharmacology</h3>
+                        <p>Master drug interactions and applications</p>
+                    </div>
+                    <div class="quiz-card" onclick="startQuiz('pathology')">
+                        <h3>🔬 Pathology</h3>
+                        <p>Understand disease mechanisms</p>
+                    </div>
+                    <div class="quiz-card" onclick="startQuiz('microbiology')" id="microbiologyCard">
+                        <h3>🦠 Microbiology</h3>
+                        <p>Premium: Study infectious diseases</p>
+                    </div>
+                    <div class="quiz-card" onclick="startQuiz('biochemistry')" id="biochemistryCard">
+                        <h3>⚗️ Biochemistry</h3>
+                        <p>Premium: Explore molecular processes</p>
+                    </div>
+                    <div class="quiz-card" onclick="startQuiz('physiology')" id="physiologyCard">
+                        <h3>🧬 Physiology</h3>
+                        <p>Premium: Master body functions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="quiz-section">
+                <h2>✨ Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Targeted Learning</h3>
+                        <p>Focus on specific medical topics with curated content</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Progress Tracking</h3>
+                        <p>Monitor your improvement with detailed analytics</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🏆</div>
+                        <h3>Achievements</h3>
+                        <p>Earn badges and milestones as you progress</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔥</div>
+                        <h3>Fire Streak System</h3>
+                        <p>Maintain your daily streak and stay motivated</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3>Community</h3>
+                        <p>Connect with other medical professionals</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Expert Content</h3>
+                        <p>Learn from verified medical experts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 MediTest. All rights reserved. | Your medical knowledge companion.</p>
+        </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeLoginModal()">&times;</button>
+            <h2>Login to MediTest</h2>
+            <div id="loginMessage"></div>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Login</button>
+            </form>
+            <p style="text-align: center; margin-top: 15px; color: #666;">
+                Don't have an account? <a href="#" onclick="openRegisterModal()">Sign up</a>
+            </p>
         </div>
     </div>
-</div>
 
-<div id="res-modal" class="modal hidden">
-    <div class="modal-content">
-        <h2 id="res-title">Výsledok 📝</h2>
-        <b style="font-size: 3rem; display:block; margin: 1rem 0" id="res-score">0%</b>
-        
-        <div id="res-pre-review">
-            <p>Skontroluj si svoje odpovede a pouč sa z chýb.</p>
-            <button class="action-btn" onclick="test.reviewErrors()">👀 Pozrieť chyby a pokračovať</button>
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeRegisterModal()">&times;</button>
+            <h2>Create MediTest Account</h2>
+            <div id="registerMessage"></div>
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="registerName">Full Name</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Sign Up</button>
+            </form>
+            <p style="text-align: center; margin-top: 15px; color: #666;">
+                Already have an account? <a href="#" onclick="openLoginModal()">Login</a>
+            </p>
         </div>
     </div>
-</div>
 
-<script>
-// KOMPLETNÉ DÁTA OTÁZOK (BIO + CHEM)
-const bioQs = [
-    { id: 1, q: "Krvná plazma:", a: "adef", options: ["obsahuje rozpustené soli", "z organických látok obsahuje najviac lipidov", "má za normálnych podmienok veľmi premenlivé zloženie", "z anorganických látok obsahuje okrem vody najviac NaCl a NaHCO3", "má veľmi stálu hladinu glukózy", "obsahuje bielkoviny"] },
-    { id: 2, q: "Označte správne odpovede:", a: "bf", options: ["v látkovom zložení ľudského organizmu má voda len malý podiel", "väčšia časť vody v ľudskom tele je v bunkách", "intracelulárna tekutina sa rozdeľuje na krv, miazgu a tkanivový mok", "krv a tkanivový mok sú cievne tekutiny", "miazga je mimocievna tekutina", "k mimobunkovej tekutine človeka patrí krv, miazga a tkanivový mok"] },
-    { id: 3, q: "Celú mimobunkovú tekutinu ľudského tela môžeme rozdeliť na:", a: "e", options: ["miazgový mok, krv a moč", "krv, tkanivový mok a mimocievnu miazgu", "tkanivový mok a krvnú plazmu", "krv a krvnú plazmu", "krv, miazgu, tkanivový mok a iné telesné tekutiny", "krv, plazmu a lymfu"] },
-    { id: 4, q: "Červené krvinky:", a: "af", options: ["sa nachádzajú u človeka v počte približne 4-5.10^12/l krvi", "majú hlavnú funkciu prenášať kyslík z tkanív do pľúc", "sú u dospelého človeka malé okrúhle jadrové bunky", "obsahujú jód v molekulách hemoglobinu", "patria k prokaryotickým bunkám lebo neobsahujú jadro", "sú okrúhle a v strede z oboch strán stlačené, t.j. bikonkávne"] },
-    { id: 5, q: "Väzba hemoglobinu s kyslikom:", a: "bde", options: ["je pevnejšia ako väzba hemoglobinu s CO", "dáva vznik oxyhemoglobinu", "dáva vznik karboxyhemoglobinu", "je slabšia ako väzba s oxidom uhoľnatým", "je voľná, kyslík sa z nej ľahko uvoľňuje", "je dôležitá pre jeho prenos z tkanív do pľúc"] },
-    { id: 6, q: "Sedimentácia červených krviniek:", a: "ad", options: ["je rýchlosť ich usadzovania", "je množstvo erytrocytov v 1 μl krvi", "je u žien pomalšia ako u mužov", "závisí najmä od zloženia krvnej plazmy", "nezávisí od prítomnosti zápalových procesov v organizme", "je špecifická skúška, ktorá určuje druh ochorenia"] },
-    { id: 7, q: "Podstatou zrážania krvi je:", a: "d", options: ["premena lipidu fibrinogénu na bielkovinu trombín", "premena nerozpustného fibrinogénu na rozpustný fibrín", "premena protrombínu na trombín sprostredkovaná fibrínom", "premena bielkoviny fibrinogénu na vláknitý fibrín účinkom trombínu", "premena trombocytov na trombín", "premena trombocytov na serotonin"] },
-    { id: 8, q: "Biele krvinky:", a: "c", options: ["sa nazývajú erytrocyty", "sú bezjadrové bunky", "sú jadrové bunky", "sa vyskytujú len v krvi", "sa v krvi vyskytujú vo väčšom počte ako červené krvinky", "sa podľa prítomnosti granúl v cytoplazme delia na granulocyty a trombocyty"] },
-    { id: 9, q: "Funkciou ľudských červených krviniek je:", a: "d", options: ["účasť na obrane proti infekcii", "transport železa z pečene", "produkovať aglutininy", "prenos kyslíka z pľúc do tkanív", "tvoriť protilátky", "produkcia fibrinogénu"] },
-    { id: 10, q: "Znížený počet erytrocytov alebo krvného farbiva v krvi človeka sa nazýva:", a: "bce", options: ["sedimentácia", "chudokrvnosť", "málokrvnosť", "leukocytóza", "anémia", "cyanóza"] },
-    { id: 11, q: "Červené krvinky u zdravého dospelého človeka sa tvoria v:", a: "d", options: ["lymfatickom systéme", "pečeni", "miazgových uzlinách", "kostnej dreni", "slezine", "krvi"] },
-    { id: 12, q: "Označte prvky, ktoré sú súčasťou molekuly hemoglobinu u človeka:", a: "bcdef", options: ["jód", "dusík", "železo", "uhlík", "vodík", "kyslík"] },
-    { id: 13, q: "Sedimentácia erytrocytov v odobratej ľudskej krvi:", a: "ade", options: ["závisí od zloženia krvnej plazmy", "je rýchlosť aglutinácie erytrocytov", "je ukazovateľom rýchlosti klesania leukocytov", "je ukazovateľom rýchlosti klesania erytrocytov", "sa zrýchľuje pri zápalových ochoreniach", "vyjadruje množstvo usadených erytrocytov"] },
-    { id: 14, q: "U človeka vzniká väzbou hemoglobinu s kyslíkom:", a: "d", options: ["oxid uhličitý a voda", "NaHCO3", "methemoglobin", "oxyhemoglobin", "karbonylhemoglobin", "oxytocin"] },
-    { id: 15, q: "Leukocyty človeka:", a: "bdf", options: ["zabezpečujú prenos hormónov do celého tela", "sú produkované aj kostnou dreňou", "zabezpečujú prenos O2 do tkanív", "sú biele krvinky", "sú nevyhnutné pri zrážaní krvi", "sa zúčastňujú na obranných reakciách organizmu"] },
-    { id: 16, q: "Krvné doštičky u človeka vznikajú:", a: "c", options: ["rozpadom trombocytov", "rozpadom červených krviniek", "oddeľovaním cytoplazmy z veľkých buniek kostnej drene", "mitotickým množením v krvi", "len v detstve", "rozpadom bielych krviniek"] },
-    { id: 17, q: "Normálne pH krvnej plazmy človeka je udržiavané v blízkosti hodnoty:", a: "e", options: ["6,0", "6,8", "7,0", "4,7", "7,4", "5,3"] },
-    { id: 18, q: "Ktoré organické látky sú celkovo hmotnostne najviac zastúpené v krvnej plazme človeka?", a: "e", options: ["voda", "nukleové kyseliny", "močovina", "monosacharidy", "bielkoviny", "glukóza"] },
-    { id: 19, q: "Ľudský fibrinogén:", a: "ef", options: ["je gén pre fibrin", "premieňa sa na trombín", "sa tvorí v kostnej dreni", "sa nachádza v erytrocytoch", "je bielkovina", "sa zúčastňuje na zrážaní krvi"] },
-    { id: 20, q: "Špecifická imunita ľudského organizmu:", a: "abde", options: ["zahŕňa tvorbu protilátok", "sa postupne, u každého individuálne, rozvíja počas ontogenézy", "je zabezpečovaná hlavne aktivitou fagocytujúcich buniek", "je zabezpečovaná hlavne lymfocytmi", "môže byť príčinou alergií", "je v celom rozsahu reaktivity vrodená"] },
-    { id: 21, q: "Imunita získaná po prekonaní infekčného ochorenia je:", a: "abe", options: ["aktívna", "špecifická", "zabezpečovaná trombocytmi", "pasívna", "napríklad protilátková", "vždy nešpecifická"] },
-    { id: 22, q: "Bunkový typ špecifickej imunity u ľudí sprostredkúvajú:", a: "d", options: ["všetky leukocyty", "plazmatické bunky", "neutrofilné granulocyty", "lymfocyty T", "monocyty", "lymfocyty B"] },
-    { id: 23, q: "Na plazmatické bunky sa menia:", a: "d", options: ["všetky lymfocyty", "granulocyty", "monocyty", "B-lymfocyty", "makrofágy", "T-lymfocyty"] },
-    { id: 24, q: "K prejavom nešpecifickej imunity človeka patrí:", a: "de", options: ["pôsobenie lyzínu", "alergia", "imunizácia", "fagocytóza", "enzymatické usmrcovanie baktérií lyzozýmom v slzách a slinách", "tvorba protilátok"] },
-    { id: 25, q: "Diapedeza u človeka je:", a: "c", options: ["sekrečná činnosť lymfocytov", "výstup červených krviniek z vlásočníc", "prestup bielych krviniek cez stenu vlásočníc", "pohlcovanie choroboplodných mikroorganizmov", "premena B lymfocytov na plazmatické bunky", "filtrácia krvnej plazmy v glomerule"] },
-    { id: 26, q: "Pohlcovanie mikroorganizmov ľudskou imunitnou bunkou sa nazýva:", a: "af", options: ["endocytóza", "diapedéza", "pinocytóza", "exocytóza", "plazmolýza", "fagocytóza"] },
-    { id: 27, q: "Nešpecifická imunita:", a: "c", options: ["zahŕňa schopnosť fagocytózy u erytrocytov", "je sprostredkovaná T a B lymfocytmi", "je vrodená", "zahŕňa schopnosť diapedézy erytrocytov", "sa delí na protilátkovú a bunkovú", "je získaná odolnosť organizmu"] },
-    { id: 28, q: "Špecifická imunita:", a: "bcd", options: ["je uskutočňovaná prostredníctvom makrofagov", "zahŕňa protilátkovú a bunkovú obranu", "je sprostredkovaná T a B lymfocytmi", "môže byť príčinou neúspešných transplantácii pri inkompatibilite darcu a príjemcu", "môže byť protilátková uskutočňovaná T lymfocytmi", "je vrodená"] },
-    { id: 29, q: "Aglutiníny u človeka sú:", a: "bd", options: ["všeobecným názvom pre akékoľvek protilátky", "sú protilátky v krvnej plazme, ktoré zhlukujú napr. červené krvinky inej krvnej skupiny", "antigény na povrchu leukocytov", "určitým druhom protilátok v krvi", "produkty aglutinogénov", "antigény na povrchu erytrocytov"] },
-    { id: 30, q: "Aglutinácia je:", a: "bf", options: ["reakcia erytrocytov s každou protilátkou iného človeka", "napríklad dej, ktorý nastáva po kontakte erytrocytov s určitými protilátkami", "zachytávanie erytrocytov v sieti fibrínu", "reakcia, ktorá nastáva po kontakte trombocytov s antigénmi iného človeka", "reakcia kostnej drene pri stretnutí s protilátkami", "imunitný dej"] },
-    { id: 31, q: "Aglutinogény u človeka:", a: "aef", options: ["sú napr. antigény erytrocytov", "sú protilátky erytrocytov", "sú gény kódujúce aglutininy", "sú gény pre antigény erytrocytov", "sú vrodené a dedičné", "sú zodpovedné za rozlíšenie krvných skupín"] },
-    { id: 32, q: "Krvné skupiny u človeka sú podmienené:", a: "ac", options: ["geneticky", "typom antigénu tvoreného v krvnej plazme", "prítomnosťou špecifických antigénov na červených krvinkách", "schopnosťou erytrocytov tvoriť protilátky", "individuálnym typom plazmatických bielkovín u každého jedinca", "druhom hemoglobínu v červených krvinkách"] },
-    { id: 33, q: "Človek s krvnou skupinou 0:", a: "abf", options: ["má protilátky proti antigénom A aj B", "má aglutiníny anti-A i anti-B, ktoré sa nachádzajú v krvnej plazme", "má antigény A aj B", "má aglutiníny anti-A a anti-B, ktoré sa nachádzajú na povrchu erytrocytov", "nemá žiadne aglutininy", "má v sére aglutiníny anti-A i anti-B"] },
-    { id: 34, q: "Osoba s krvnou skupinou AB:", a: "bdf", options: ["nemá na povrchu erytrocytov žiadne aglutinogény", "má na povrchu erytrocytov aglutinogény A aj B", "môže byť univerzálnym darcom pri transfúziách krvi pre všetky krvné skupiny", "nemá aglutininy anti-A a anti-B", "má aglutiníny anti-A aj anti-B", "nemôže byť univerzálnym darcom pri transfúziách krvi pre všetky krvné skupiny"] },
-    { id: 35, q: "Aký aglutinogén na povrchu erytrocytov má človek s krvnou skupinou B:", a: "b", options: ["A", "B", "anti-A a anti-B", "žiadny", "anti-A", "A aj B"] },
-    { id: 36, q: "Protilátky anti-Rh:", a: "bcd", options: ["sa vytvárajú napr. pri podaní Rh-negatívnych krviniek človeku Rh-pozitívnemu", "nie sú vrodené", "sa vytvárajú napr. pri podaní Rh-pozitívnych krviniek človeku Rh-negatívnemu", "sa vytvárajú pri gravidite u Rh-negatívnej ženy, ktorej plod je Rh-pozitívny", "sú vrodené", "sa vytvárajú pri gravidite u Rh-pozitívnej ženy, ktorej plod je Rh-negatívny"] },
-    { id: 37, q: "Diastola je:", a: "ace", options: ["uvoľnenie predsiení a komôr srdcového svalu", "stav, kedy dochádza k vytláčaniu krvi zo srdcových komôr", "stav, kedy sa celé srdce plní krvou", "kontrakcia srdcového svalu", "stav, keď srdce ochabuje", "stav, keď sa srdce zmršťuje"] },
-    { id: 38, q: "Polmesiačikovité chlopne človeka sa:", a: "cde", options: ["otvárajú v čase diastoly", "nachádzajú na začiatku pľúcnych žíl", "otvárajú v čase systoly komôr", "nachádzajú na začiatku pľúcnej tepny", "nachádzajú na začiatku srdcovnice", "nachádzajú medzi predsieňami a komorami"] },
-    { id: 39, q: "V období systoly komôr u zdravého dospelého človeka:", a: "acf", options: ["sa otvárajú polmesiačikovité chlopne", "sa komory plnia krvou", "je systola predsiení už ukončená", "sa uzatvárajú polmesiačikovité chlopne", "sa otvárajú cípovité chlopne", "sa zmršťuje svalovina komôr"] },
-    { id: 40, q: "Cípovité chlopne u človeka:", a: "be", options: ["zabraňujú spätnému toku krvi z pravej predsiene do ľavej predsiene", "zabraňujú spätnému toku krvi z komôr do predsiení", "sú na začiatku srdcovnice a pľúcnej tepny", "zabraňujú spätnému toku krvi z predsiení do komôr", "sa nachádzajú medzi predsieňami a komorami", "zabraňujú spätnému toku krvi z pravej komory do ľavej komory"] },
-    { id: 41, q: "V čase diastoly sa u človeka plní krvou:", a: "d", options: ["len ľavá predsieň", "aorta", "len pravá komora", "celé srdce", "len ľavá polovica srdca", "len ľavá komora"] },
-    { id: 42, q: "Priame podnety pre srdcové kontrakcie vznikajú u človeka za normálnych okolností:", a: "ce", options: ["v mozgovej kôre", "v hypotalame", "v špecializovanej časti srdcového svalu", "v gangliách vegetatívnych nervov", "v samotnom srdci", "v predĺženej mieche"] },
-    { id: 43, q: "Do pravej predsiene zdravého ľudského srdca vstupujú:", a: "ad", options: ["cievy privádzajúce odkysličenú krv z celého tela", "pľúcne žily", "pľúcne tepny", "horná a dolná dutá žila", "srdcovnica", "pľúcnica"] },
-    { id: 44, q: "Vencovité tepny u človeka:", a: "acd", options: ["nazývame aj koronárne tepny", "nazývame aj arteriálne tepny", "vystupujú priamo z aorty", "vystupujú priamo zo srdcovnice", "vystupujú priamo z pľúcnice", "vystupujú priamo z pľúcnych žíl"] },
-    { id: 45, q: "U zdravého dospelého človeka je do pľúc privádzaná:", a: "ad", options: ["pľúcnicou odkysličená krv", "odkysličená krv z ľavej komory", "okysličená krv z pravej komory", "odkysličená krv z pravej komory", "pľúcnymi žilami odkysličená krv", "odkysličená krv z pravej predsiene"] },
-    { id: 46, q: "Srdcový infarkt u človeka vzniká:", a: "cef", options: ["ako následok odumretia časti srdcovej svaloviny", "krvácaním do srdcového svalu", "po prerušení dodávky kyslíka a živín do srdcovej svaloviny", "následkom upchatia pľúcnice alebo jej vetvy", "uzavretím koronárnej tepny alebo jej vetvy", "najčastejšie ako dôsledok artériosklerózy"] },
-    { id: 47, q: "Ústredie pre riadenie srdca a ciev je u človeka v:", a: "cd", options: ["samotnom srdci", "hypotalame", "predĺženej mieche", "mozgovom kmeni", "medzimozgu", "mozgovej kôre"] },
-    { id: 48, q: "Miazgová sústava:", a: "cdef", options: ["je anatomicky súčasťou srdcovocievneho systému", "zásobuje tkanivá tkanivovým mokom", "je tvorená miazgovými cievami", "odvádza z tkanív veľké molekuly a častice", "ústi do žilového systému", "odvádza z tkanív časť tkanivového moku"] },
-    { id: 49, q: "Lymfa človeka:", a: "bde", options: ["neobsahuje lymfocyty", "má podobné zloženie ako krvná plazma", "vzniká filtráciou v miazgových uzlinách", "transportuje veľké molekuly bielkovín", "je filtrovaná v miazgových uzlinách", "patrí k intracelulárnej tekutine"] },
-    { id: 50, q: "Označte správne odpovede:", a: "ad", options: ["kŕčové žily sú vakovité rozšírenia povrchových žil na dolných končatinách", "najlepšie možno nahmatať tep na žilách", "krv plní všetky svoje funkcie len v žilách", "vo vlásočniciach už tlak nekoliše", "záznam srdcových oziev sa nazýva elektrokardiogram", "vo vlásočniciach prebieha výmena látok medzi krvou a lymfou"] },
-    { id: 51, q: "Krv v žilách telového obehu:", a: "cef", options: ["prúdi pod veľmi vysokým tlakom", "je okysličená", "prúdi smerom do srdca", "prúdi bezprostredne zo srdca", "je odkysličená", "prúdi aj s pomocou kostrových svalov"] },
-    { id: 52, q: "Vrátnikový zvierač u človeka sa nachádza:", a: "bc", options: ["medzi pažerákom a žalúdkom", "medzi žalúdkom a dvanástnikom", "medzi žalúdkom a tenkým črevom", "medzi žalúdkom a hrubým črevom", "medzi žalúdkom a bedrovníkom", "na vyústení hrubého čreva"] },
-    { id: 53, q: "Obličky človeka:", a: "adef", options: ["majú aj endokrinnú funkciu", "majú aj exokrinnú funkciu", "produkujú močovinu", "sú miestom tvorby moču", "produkujú a uvoľňujú do krvi renín", "produkujú a uvoľňujú do krvi erytropoetin"] },
-    { id: 54, q: "Pavúčnica u človeka:", a: "cef", options: ["je väzivová bohato prekrvená blana", "je väzivová málo prekrvená blana", "je jemná bezcievna blana", "je obal tesne priliehajúci na povrch mozgu a miechy", "je blana spájajúga záhyby CNS", "sa latinsky nazýva arachnoidea"] },
-    { id: 55, q: "Mozoček človeka:", a: "acdf", options: ["sa podieľa na udržovaní rovnováhy tela a na koordinácii pohybov", "má na povrchu bielu a vo vnútri sivú hmotu", "dostáva informácie z mozgovej kôry", "má na povrchu sivú a vo vnútri bielu hmotu", "je najvyšším centrom vegetatívneho riadenia", "dostáva informácie zo statokinetického receptora, z kožných mechanoreceptorov, svalových a šľachových receptorov"] },
-    { id: 56, q: "Medzi pohlavne prenosné choroby patrí:", a: "abcd", options: ["syfilis", "lues", "kvapavka", "trichomoniáza", "mumps", "meningitída"] },
-    { id: 57, q: "Chondrocyty sú:", a: "bce", options: ["väzivové bunky", "chrupkové bunky", "bunky spojivového tkaniva", "kolagénové bunky", "v medzistavcových platničkách", "v kĺbových puzdrách"] },
-    { id: 58, q: "Všetky kosti sú pokryté:", a: "ae", options: ["pevným väzivovým obalom", "chrupkou", "kostnou dreňou", "glykokalyxom", "okosticou", "hubovitým kostným tkanivom"] },
-    { id: 59, q: "Dutiny dlhých kostí vypĺňa:", a: "c", options: ["okostica", "kompaktné kostné tkanivo", "kostná dreň", "väzivo", "chrupka", "voda"] },
-    { id: 60, q: "Spojenie kostí u človeka môže byť uskutočnené:", a: "ace", options: ["pevne", "len kĺbovo", "aj pomocou väziva", "u všetkých kostí rovnako", "aj pomocou chrupky", "svalmi"] },
-    { id: 61, q: "Kostra ľudského tela sa skladá z troch hlavných častí:", a: "bd", options: ["chrbtice, lebky a hrudníka", "chrbtice s rebrami a hrudnou kosťou, kostry hlavy a kostry končatín", "mozgovej, tvárovej časti a hrudníka", "chrbtice s hrudníkom, lebky a kostry končatín", "trupu, lebky a hrudníka", "lebky, krčnej časti, hrudníka a končatín"] },
-    { id: 62, q: "Označte správne odpovede:", a: "adf", options: ["bedrový kĺb je tvorený hlavicou stehennej kosti a jamkou panvovej kosti", "v bedrovom kĺbe sa spájajú stehenná kosť, píšťala a jabĺčko", "bedrový kĺb je najzložitejší z kĺbov v tele", "v kĺbe kolena sa spájajú stehenná kosť, píšťala a jabĺčko", "bedrový kĺb je tvorený hlavicou panvovej kosti a jamkou stehennej kosti", "kolenný kĺb je najzložitejší z kĺbov v tele"] },
-    { id: 63, q: "Okostica u ľudí pokrýva:", a: "d", options: ["vnútornú plochu hrudnej steny", "väzivá", "len ploché kosti", "vonkajší povrch kostí", "vnútorný povrch dutých kostí", "kĺbové trecie plochy"] },
-    { id: 64, q: "Dutina dlhých kostí:", a: "cdf", options: ["je úplne prázdna", "môže byť vyplnená okosticou", "môže byť vyplnená červenou kostnou dreňou", "môže byť vyplnená žltou kostnou dreňou", "obsahuje dreňovú tekutinu", "môže obsahovať tuk"] },
-    { id: 65, q: "Počet krížových stavcov človeka je:", a: "bf", options: ["6", "5", "4-5", "7", "12", "5, zrastajú do krížovej kosti"] },
-    { id: 66, q: "K tvárovej časti lebky patrí:", a: "bce", options: ["čelová kosť", "sánka", "čeľusť", "záhlavná kosť", "jarmová kosť", "temenná kosť"] },
-    { id: 67, q: "Počet stavcov u človeka je:", a: "ce", options: ["5 krčných aj hrudníkových", "8 krčných a hrudníkových", "7 krčných", "4-5 krčných", "12 hrudníkových", "10 hrudníkových"] },
-    { id: 68, q: "Ktorý sval sa zúčastňuje na zmenách polohy lopatky u človeka:", a: "e", options: ["dvojhlavý sval ramena", "trojhlavý sval ramena", "krátky chrbtový sval", "hlboký chrbtový sval", "lichobežníkový sval", "kývač hlavy"] },
-    { id: 69, q: "K svalom stehna patria:", a: "bc", options: ["ohýbače - napr. štvorhlavý sval stehna", "vystierače - napr. dvojhlavý sval stehna", "priťahovače - napr. dlhý priťahovač", "vystierače - napr. krajčírsky sval", "ohýbače - napr. dvojhlavý sval lýtka", "ohýbače - napr. trojhlavý sval lýtka"] },
-    { id: 70, q: "Približný počet svalov ľudského tela je:", a: "c", options: ["400", "600", "200", "260", "100", "300"] },
-    { id: 71, q: "Hladké svaly:", a: "bcef", options: ["sú tvorené priečne pruhovanými svalovými vláknami", "nemôžeme ovládať vôľou", "sú ovládané autonómnymi nervami a hormónmi", "sú napr. mimické svaly", "sa nachádzajú v stenách vnútorných orgánov", "spôsobujú rozširovanie a zužovanie zrenice"] },
-    { id: 72, q: "K priečne pruhovaným svalom patria:", a: "acef", options: ["bránica", "akomodačný sval", "svaly hltana", "svaly v stene žalúdka", "musculus biceps", "vonkajšie medzirebrové svaly"] },
-    { id: 73, q: "K hladkým svalom patria:", a: "cde", options: ["vonkajší zvierač močovej rúry", "bránica", "vnútorný análny zvierač", "akomodačný sval", "vnútorný zvierač močovej rúry", "vnútorné medzirebrové svaly"] },
-    { id: 74, q: "Srdcový sval:", a: "acdf", options: ["stavbou pripomína priečne pruhované svaly", "funkciou pripomína priečne pruhované svaly", "svoju činnosť vykonáva pod vplyvom autonómneho nervového systému", "funkciou pripomína hladké svaly", "stavbou pripomína hladké svaly", "je dutý sval"] },
-    { id: 75, q: "Trojhlavý sval lýtka:", a: "bce", options: ["sa jedným koncom upína na hlavicu stehennej kosti", "sa na jednom konci upína na hrbol pätovej kosti", "sa na jednom konci končí Achillovou šľachou", "patrí k hladkým svalom", "patrí k priečne pruhovaným svalom", "nemôžeme ovládať svojou vôľou"] },
-    { id: 76, q: "Svaly s prevahou bielych svalových vláken:", a: "cde", options: ["sú prevažne hladké svaly", "obsahujú viac farbiva myoglobínu", "uplatňujú sa pri krátkodobej kontrakcii", "rýchlo sa unavia", "majú menej myoglobinu", "sťahujú sa pomaly"] },
-    { id: 77, q: "Kostrové svaly:", a: "ade", options: ["sú vôľou ovládateľné", "sú vôľou neovládateľné", "sú tvorené bunkami s jedným jadrom", "sú tvorené viacjadrovými svalovými vláknami", "nazývame aj priečne pruhované svaly", "nazývame aj hladké svaly"] },
-    { id: 78, q: "Acetylcholín je:", a: "cd", options: ["súčasťou žlče", "tráviaci enzým", "neuromediátor", "chemická látka, ktorá sprostredkováva prenos nervového signálu", "chemická látka, ktorá katalyzuje štiepenie tukov", "zhromažďovaný v žlčníku"] },
-    { id: 79, q: "Hladké svaly človeka sú ovládané:", a: "c", options: ["len sympatikom", "mozgovou kôrou a rôznymi hormónmi", "autonómnymi nervami a rôznymi hormónmi", "rôznymi hormónmi a vitamínmi", "vôľou", "mozgovou kôrou a autonómnymi nervami"] },
-    { id: 80, q: "Súčasťou chrbtice je presne:", a: "bde", options: ["5 krčných stavcov", "5 driekových stavcov", "10 hrudníkových stavcov", "7 krčných stavcov", "12 hrudníkových stavcov", "7 krížových stavcov zrastených do krížovej kosti"] },
-    { id: 81, q: "Ľavé pľúca človeka:", a: "bdf", options: ["sú rozdelené na tri laloky", "sú rozdelené na dva laloky", "sú pokryté pohrudnicou", "sú pokryté popľúcnicou", "sú zrkadlovým obrazom pravých pľúc", "majú o jeden lalok menej ako pravé pľúca"] },
-    { id: 82, q: "Popľúcnica a pohrudnica človeka:", a: "bce", options: ["sú tvorené hladkým svalstvom", "sú dvoma časťami tej istej blany", "vylučujú mazľavú číru tekutinu", "sú dve odlišné cievy", "spolu ohraničujú a uzavierajú štrbinovitú pohrudnicovú dutinu", "sú dve rôzne časti tej istej cievy"] },
-    { id: 83, q: "Vdychové svaly človeka sú:", a: "bdf", options: ["vnútorné medzirebrové svaly", "vonkajšie medzirebrové svaly", "bránica a vnútorné medzirebrové svaly", "bránica a vonkajšie medzirebrové svaly", "vonkajšie a vnútorné medzirebrové svaly", "bránica"] },
-    { id: 84, q: "Činnosť dýchacích svalov je riadená:", a: "ae", options: ["ústredím v predĺženej mieche", "z chrbticovej miechy", "samotnými pľúcami", "štítnou žľazou", "ústrednou nervovou sústavou", "samotnou bránicou"] },
-    { id: 85, q: "Vonkajšie dýchanie u človeka:", a: "af", options: ["je výmena dýchacích plynov medzi alveolárnym vzduchom a krvou", "je výmena dýchacích plynov medzi krvou a tkanivami", "je proces, ktorý zahŕňa oxidačno-redukčné reakcie v bunkách", "je vnikanie vzduchu do pľúc a unikanie z pľúc", "je výmena O2 a CO2 v tkanivách a bunkách pracujúcich orgánov"] },
-    { id: 86, q: "Výmena O2 a CO2 medzi krvou a tkanivami u človeka sa nazýva:", a: "e", options: ["celková kapacita", "vonkajšie dýchanie", "oxidatívna fosforylácia", "vitálna kapacita", "vnútorné dýchanie", "pľúcna ventilácia"] },
-    { id: 87, q: "V atmosférickom vzduchu je obsah kyslíka v % približne:", a: "c", options: ["0,03", "0,10", "21", "78", "16", "8"] },
-    { id: 88, q: "Tlak v pohrudnicovej štrbine človeka je pri pokojnom dýchaní:", a: "ace", options: ["namúžený v prípade pneumotoraxu", "rovnaký ako atmosférický", "nižší ako atmosférický", "nulový", "rozhodujúci pre rozopínanie pľúc", "vyšší ako atmosférický"] },
-    { id: 89, q: "Vitálna kapacita ľudských pľúc je:", a: "abef", options: ["v priemere väčšia u mužov", "individuálne veľká u každého jedinca", "rozdiel medzi celkovou kapacitou a exspiračným objemom", "súčtom rezervných objemov, respiračného a reziduálneho", "rozdiel medzi celkovou kapacitou a reziduálnym objemom", "nerovnováka v priebehu života daného jedinca"] },
-    { id: 90, q: "Kýchanie človeka je vyvolávané podráždením:", a: "b", options: ["sliznice priedušnice", "sliznice nosa", "sliznice ústnej dutiny", "sliznice hrtana", "sliznice priedušiek", "všetkej pľúc"] },
-    { id: 91, q: "Podráždenie sliznice hrtana, priedušnice alebo priedušiek vyvoláva u človeka:", a: "cef", options: ["prudký hlučný nádych", "kýchanie", "kašeľ", "akomodačny reflex", "obranné reflexy", "prudký hlučný výdych"] },
-    { id: 92, q: "Kvapkôčkovou infekciou sa šíri:", a: "abdf", options: ["nádcha", "chrípka", "kvapavka", "tuberkulóza", "lues", "zápal mandlí"] },
-    { id: 93, q: "Sliny človeka obsahujú enzým:", a: "bce", options: ["štĺpaci sacharózu", "ptyalin", "pepsinogén", "fibrinogén", "chymozin", "gén pre pepsin"] },
-    { id: 94, q: "V ústnej dutine človeka:", a: "cdf", options: ["ústia štyri páry veľkých slinných žliaz", "dochádza k vstrebanivaniu všetkých živín", "ústia tri páry veľkých slinných žliaz", "nachádzame amylázu", "dochádza k tráveniu všetkých živín", "dochádza k hrubému mechanickému spracovaniu potravy"] },
-    { id: 95, q: "Neúčinnou formou pepsinu je:", a: "c", options: ["trypsín", "ptyalin", "pepsinogén", "fibrinogén", "chymozín", "gen pre pepsín"] },
-    { id: 96, q: "Kyselina chlorovodíková v žalúdku človeka:", a: "adf", options: ["bráni znehodnocovaniu niektorých vitamínov", "sa vyskytuje len pri určitých ochoreniach", "vytvára zásadité prostredie nevyhnutné pre pôsobenie pepsinu", "uľahčuje vstrebanávanie niektorých minerálnych látok", "spôsobuje znehodnocovanie vitamínov B1, B2 a C", "vytvára vhodné podmienky pre pôsobenie pepsinu"] },
-    { id: 97, q: "Hlavnými súčasťami ľudskej žalúdkovej šťavy sú:", a: "ac", options: ["kyselina chlorovodíková, pepsín a hlien", "žlč a mucín", "HCI, pepsín a mucín", "mucín, HCl a ptyalin", "hlien, HCl a trypsin", "amyláza, HCl a hlien"] },
-    { id: 98, q: "Tenké črevo dospelého človeka je dlhé približne:", a: "ce", options: ["40-50 cm", "4-5 cm", "4-5 m", "40-50 m", "400-500 cm", "400-500 m"] },
-    { id: 99, q: "Hlavným miestom vstrebávania živín u človeka je:", a: "d", options: ["pažerák", "žalúdok", "hrubé črevo", "tenké črevo", "slepé črevo", "pankreas"] },
-    { id: 100, q: "K tráveniu proteínov u človeka dochádza v:", a: "c", options: ["ústnej dutine", "pečeni", "tenkom čreve", "žalúdku", "hrubé čreve", "slepom čreve"] },
-    { id: 101, q: "Črevná šťava človeka obsahuje enzýmy štiepiace najmä:", a: "adf", options: ["nukleové kyseliny", "škrob", "trypsin", "peptidy", "aminokyseliny", "disacharidy"] },
-    { id: 102, q: "Na trávení tukov v tenkom čreve človeka sa podieľa enzým:", a: "e", options: ["nukleáza", "ptyalin", "amyláza", "trypsin", "lipáza", "pepsin"] },
-    { id: 103, q: "Na trávení v tenkom čreve sa zúčastňujú enzýmy:", a: "bcde", options: ["obsiahnuté v žlči", "pankreasovej šťavy", "črevnej šťavy", "nukleázy", "lipázy", "polymerázy"] },
-    { id: 104, q: "Trypsin u človeka:", a: "bcf", options: ["sa tvorí v žalúdku", "pochádza z pankreasu", "v tenkom čreve štiepi polypeptidy na peptidy a aminokyseliny", "sa tvorí v žľazách žalúdka, kde štiepi bielkoviny na polypeptidy", "sa tvorí v pankrease, v tenkom čreve štiepi tuky na glycerol a mastné kyseliny", "pôsobí najmä v tenkom čreve"] },
-    { id: 105, q: "Šťava pankreasu u človeka obsahuje:", a: "bcde", options: ["enzýmy ptyalín, amylázu a pepsin", "soli, ktoré neutralizujú kyslú tráveninu", "enzýmy trypsín, amylázu a lipázu", "enzýmy štiepiace lipidy", "enzýmy štiepiace všetky živiny", "HCl, enzýmy trypsin a pepsin"] },
-    { id: 106, q: "Soli žlčových kyselín v tenkom čreve človeka:", a: "bce", options: ["uľahčujú pôsobenie amyláz", "rozptyľujú tuky na jemné kvapôčky", "uľahčujú pôsobenie lipáz", "rozkladajú tuky na glycerol a mastné kyseliny", "znižujú povrchové napätie tukov", "zvyšujú povrchové napätie a tak emulgujú tuky"] },
-    { id: 107, q: "Žlč u človeka:", a: "cdf", options: ["sa tvorí v pankrease", "sa zhromažďuje v pečeni", "sa tvorí v pečeni", "sa zhromažďuje v žlčníku", "sa tvorí v žlčníku", "obsahuje anorganické soli"] },
-    { id: 108, q: "Hrubé črevo človeka:", a: "abd", options: ["je dlhé asi 1,5 m", "obsahuje kvasné a hnilobné baktérie", "je hlavným miestom resorpcie v ľudskom tele", "sa podieľa na vstrebávaní napr. vody, solí a niektorých liekov", "je dlhé asi 15 m", "vylučuje vlastné tráviace šťavy"] },
-    { id: 109, q: "V hrubom čreve dospelého človeka normálne trvalo žijú:", a: "bdf", options: ["vírusy Escherichia coli", "kvasné baktérie", "nitrifikačné baktérie", "baktérie Escherichia coli", "drobné neškodné helminty", "hnilobné baktérie"] },
-    { id: 110, q: "Energeticky najbohatšou zložkou ľudskej potravy (na jednotku hmotnosti) sú:", a: "e", options: ["minerálne látky", "bielkoviny", "sacharidy", "aminokyseliny", "tuky", "nukleové kyseliny"] },
-    { id: 111, q: "Ktorý z vitamínov v strave človeka je veľmi nestály:", a: "bc", options: ["retinol", "kyselina askorbová", "vitamín C", "vitamín A", "pyridoxín", "vitamín E"] },
-    { id: 112, q: "Stav pri nedostatočnom prívode vitamínov sa všeobecne nazýva:", a: "a", options: ["hypovitaminóza", "podvýživa", "avitaminóza", "hypervitaminóza", "perniciózna anémia", "hladovanie"] },
-    { id: 113, q: "Ktoré vitamíny sa normálne tvoria činnosťou baktérií v hrubom čreve človeka:", a: "adf", options: ["K", "E", "C", "B12", "D", "vitamíny komplexu B"] },
-    { id: 378, q: "Univerzálnym prenášačom energie v bunke je:", a: "bc", options: ["teplo", "molekula ATP", "adenozíntrifosfát", "molekula AMP", "molekula, ktorá obsahuje tri makroergické väzby", "škrob a olej"] },
-    { id: 379, q: "Tuky:", a: "abdef", options: ["môžu byť súčasťou vitamínov", "sú súčasťou niektorých hormónov", "sú hlavnou zložkou protilátok", "sa podieľajú na regulačných procesoch v bunke", "sú najhospodárnejším zdrojom energie", "sú súčasťou biomembrán"] },
-    { id: 380, q: "Za najmenší systém schopný samostatného života sa považuje:", a: "b", options: ["vírus", "bunka", "kolónia", "biopolymér", "populácia", "nukleoproteínová častica"] },
-    { id: 381, q: "Základom cytoplazmatickej membrány je:", a: "bd", options: ["bielkovinová dvojvrstva", "dvojvrstva lipidov, do ktorej sú ponorené bielkoviny", "cytosol", "fosfolipidová dvojvrstva", "plazmaléma", "bielkovinová dvojvrstva, do ktorej sú ponorené fosfolipidi"] },
-    { id: 382, q: "K základným bunkovým povrchom eukaryotickej bunky patrí:", a: "ade", options: ["plazmaléma", "jadrová membrána", "pelikula", "bunková stena", "cytoplazmatická membrána", "karyoléma"] },
-    { id: 383, q: "Cytoplazmatická membrána:", a: "abde", options: ["reguluje príjem látok do bunky", "sa nazýva plazmaléma", "sa nazýva karyoléma", "patrí k bunkovým povrchom", "obsahuje receptory na zachytávanie signálov", "tvorí prostredie pre život a metabolickú aktivitu bunkových organel"] },
-    { id: 384, q: "Vlastnosť cytoplazmatickej membrány niektoré látky prepúšťať a iné nie sa nazýva:", a: "af", options: ["selektívna priepustnosť", "permeabilita", "difúzia", "priepustnosť", "osmóza", "semipermeabilita"] },
-    { id: 385, q: "Vírusy zaraďujeme medzi organizmy:", a: "bcf", options: ["eukaryotické", "schopné uchovávať genetickú informáciu", "nebunkové", "prokaryotické", "schopné autoreprodukcie", "rozmnožovaním viazané len na živé bunky"] },
-    { id: 386, q: "Z hľadiska zložitosti vnútornej štruktúry sa rozlišujú dva základné typy buniek:", a: "c", options: ["rastlinné a živočíšne", "jadrové a bezjadrové", "prokaryotické a eukaryotické", "mikroskopické a submikroskopické", "jednoduché a zložené", "telové a pohlavné"] },
-    { id: 387, q: "Bunky určitého funkčného a štruktúrneho typu sa spájajú do:", a: "ce", options: ["orgánov", "špecializovaných buniek", "pletiv", "indivíduí vyššieho rádu", "tkanív", "tkanivových kultúr"] },
-    { id: 388, q: "Cytológia sa zaoberá štúdiom:", a: "cef", options: ["živých sústav na úrovni molekúl", "mikroskopickej stavby živočíšnych tkanív", "javov na úrovni bunky", "živých mikroorganizmov", "živých sústav na úrovni ich základnej štruktúrnej a funkčnej jednotky", "tvaru a štruktúry buniek a bunkových organel"] },
-    { id: 389, q: "Obsah vody v bunkách:", a: "acde", options: ["je v priemere 65%", "sa počas života organizmu nemení", "závisí od ich prostredia", "závisí od orgánu, v ktorom sa nachádzajú", "závisí od ich veku", "ontogeneticky mladších je menší"] },
-    { id: 390, q: "Prokaryotické bunky nemajú:", a: "adef", options: ["vnútorný priestor rozčlenený membránami na štruktúrne a funkčné celky", "ribozómy", "cytoplazmatickú membránu", "centriol", "jadierko", "mitochondrie"] },
-    { id: 391, q: "Biomembrány sú zložené:", a: "adf", options: ["z dvojvrstvy lipidov a integrálnych a periférnych bielkovín", "z dvojvrstvy fosfolipidov a dvojvrstvy sacharidov", "z jednej vrstvy fosfolipidov a dvoch vrstiev molekúl bielkovín", "z molekúl fosfolipidov, ktoré tvoria dvojitú vrstvu a molekúl bielkovín", "z vonkajšej bielkovinovej a vnútornej lipidovej vrstvy", "z dvojvrstvy fosfolipidov, do ktorej sú ponorené molekuly bielkovín"] },
-    { id: 392, q: "Eukaryotické bunky na rozdiel od prokaryotických:", a: "ace", options: ["majú membránové organely", "nemajú membránové organely", "karyolému", "nemajú jadrovú membránu", "majú vnútorný priestor rozčlenený membránami na štruktúrne a funkčné celky", "majú vlastný genetický materiál"] },
-    { id: 393, q: "Cytoskelet bunky:", a: "cdf", options: ["predstavuje statickú kostru bunky", "uplatňuje sa pri realizácii difúzie", "uplatňuje sa pri realizácii fagocytózy", "uplatňuje sa pri realizácii pinocytozy", "je zložený z nukleoproteinovych vlákien", "má pohybovú, mechanickú a podpornú funkciu"] },
-    { id: 394, q: "Drsná forma endoplazmatického retikula:", a: "cde", options: ["sa podieľa na syntéze lipidov", "je bez ribozómov", "podieľa na syntéze bielkovín", "podieľa na syntéze proteínov", "zabezpečuje vnútrobunkový transport látok", "nepatrí k membránovým organelám bunky"] },
-    { id: 395, q: "Hladká forma endoplazmatického retikula:", a: "abcf", options: ["je bez ribozómov", "sa podieľa na syntéze lipidov", "sa podieľa na syntéze vitamínu D", "obsahuje predovšetkým hydrolytické enzýmy", "sa podieľa na syntéze bielkovín", "zabezpečuje vnútrobunkový transport niektorých látok"] },
-    { id: 396, q: "Lyzozómy obsahujú enzýmy:", a: "abef", options: ["ktoré sa zúčastňujú na lytických procesoch v bunke", "ktoré sa zúčastňujú na vnútrobunkovom trávení", "typu polymeráz", "tráviace a vylučovacie", "hydrolytické", "ktoré štiepia látky cudzorodé alebo nepotrebné"] },
-    { id: 397, q: "Bunkové jadro:", a: "acdf", options: ["sa označuje ako nucleus", "sa skladá predovšetkým z RNA a bielkovín", "obsahuje DNA a bielkoviny, ktoré spolu tvoria chromatin", "má na povrchu karyolému", "má na povrchu plazmalému", "má na povrchu dve biomembrány"] },
-    { id: 398, q: "Ribozómy:", a: "cdf", options: ["patria k membránovým organelám bunky", "sú mikroskopické častice", "nepatria k membránovým organelám bunky", "sú viditeľné len elektrónovým mikroskopom", "sú nukleoproteínové častice zložené z DNA a bielkovin", "sú nukleoproteínové častice zložené z RNA a bielkovín"] },
-    { id: 399, q: "Bielkovinový obal vírusu sa nazýva:", a: "cf", options: ["kapsoméra", "proteín", "kapsid", "cysta", "spóra", "bielkovinový plášť"] },
-    { id: 400, q: "Mitochondrie sú membránové organely, ktoré:", a: "bcdf", options: ["sú od cytoplazmy oddelené jednou membránou", "sú od cytoplazmy oddelené dvojitou membránou", "majú v matrix molekuly DNA", "majú v matrix enzýmový komplex pre Krebsov cyklus", "sú vyplnené bunkovou šťavou", "majú na mitochondriálnych kristách lokalizované enzýmy dýchacieho reťazca"] },
-    { id: 401, q: "Mitochondrie majú:", a: "abcde", options: ["dve biomembrány", "molekuly DNA", "význam v produkcii ATP", "vlastné ribozómy", "v matrix uložený enzýmový komplex pre Krebsov cyklus", "syntetickú a sekrečnú úlohu v bunke"] },
-    { id: 402, q: "Syntetickými centrami eukaryotických buniek sú:", a: "cd", options: ["lyzozómy", "mitochondrie", "endoplazmatické retikulum", "Golgiho aparát", "centrioly", "vakuoly"] },
-    { id: 403, q: "Prokaryotický typ bunky majú:", a: "f", options: ["vírusy", "baktériofágy", "všetky mikroorganizmy", "jednobunkové rastliny", "jednobunkové živočíchy", "baktérie"] },
-    { id: 404, q: "Ktoré procesy sa uskutočňujú v Golgiho aparáte:", a: "bc", options: ["rozklad látok", "úprava látok, ktoré sa vylučujú z bunky", "tvorba lyzozómov", "oxidácia bielkovín", "syntéza hormónov, polysacharidov a nukleových kyselín", "bunkové oxidácie"] },
-    { id: 405, q: "Cytoskeletová sústava bunky:", a: "bce", options: ["patrí k membránovým štruktúram", "uplatňuje sa pri realizácii všetkých druhov pohybov, ktoré bunka vykonáva", "predstavuje dynamickú kostru bunky", "predstavuje statickú kostru bunky", "je tvorená mikrotubulami, mikrofilamentami a intermediárnymi filamentami", "je tvorená nukleoproteínovými vláknami"] },
-    { id: 406, q: "Prokaryotická bunka na rozdiel od eukaryotickej má:", a: "a", options: ["nukleoid", "jadrovú membránu", "cytoplazmatickú membránu", "ribozómy", "membránové organely", "centriol"] },
-    { id: 407, q: "Nukleolus:", a: "cd", options: ["je v cytoplazme a je zložený z RNA a bielkovín", "je v jadre a skladá sa z DNA a bielkovín", "je jadierko a je miestom syntézy rRNA", "je štruktúra, ktorá počas jadrového delenia mizne", "má na povrchu karyolému", "je uložený v cytoplazme prokaryotických buniek"] },
-    { id: 408, q: "Jadro eukaryotických buniek:", a: "acdf", options: ["obsahuje chromatín", "obsahuje centriol", "je riadiace centrum bunky", "je reprodukčné centrum bunky", "je submikroskopická štruktúra", "sa vyskytuje vo všetkých eukaryotických bunkách okrem niektorých vysokošpecializovaných buniek"] },
-    { id: 409, q: "Prokaryotická bunka:", a: "abc", options: ["obsahuje prokaryotické ribozómy", "má cytoplazmatickú membránu", "má nukleoid", "má lineárne molekuly DNA uložené v cytoplazme", "má vnútorný priestor rozčlenený membránami na štruktúrne a funkčné celky", "má homologické kruhové chromozómy uložené voľne v cytoplazme"] },
-    { id: 410, q: "Ktoré štruktúry prokaryotickej bunky sú zodpovedné za uvoľňovanie energie:", a: "e", options: ["tylakoidy", "bičíky", "ribozómy", "mitochondrie", "plazmatická membrána", "jadro"] },
-    { id: 411, q: "Medzi membránové organely nepatria:", a: "abde", options: ["ribozómy", "bakteriálne jadro", "mitochondrie", "centroil", "jadierko", "vakuoly"] },
-    { id: 412, q: "Medzi membránové organely patria:", a: "df", options: ["centroly", "ribozómy", "chromozómy", "centroil", "jadierko", "Golgiho aparát"] },
-    { id: 413, q: "K mitotickému aparátu bunky patria:", a: "cdf", options: ["centroméra", "chromozómy", "astrosféra", "trioly", "polové telieska", "deliace vretienko"] },
-    { id: 414, q: "Chromozómy:", a: "adef", options: ["sú viditeľné len počas delenia bunky", "sú viditeľné v interfáze", "sú v strede tela", "tvoria ich nukleoproteínové vlákna", "majú ramienká, ktoré sa spájajú v mieste centroméry", "v metafáze mitózy sú zložené z dvoch chromatíd, ktoré sú geneticky identické"] },
-    { id: 415, q: "V proláze mitózy:", a: "bcdf", options: ["sa centrozóm delí a každá polovica putuje na opačný pól jadra", "sú chromozómy dvojchromatidové", "sú chromozómy jednocromatidové", "zaniká jadrová membrána", "sa chromozómy dešpiralizujú", "sa centrozóm delí a každý putuje na opačný pól jadra"] },
-    { id: 416, q: "V metafáze mitózy:", a: "adf", options: ["sú chromozómy dvojchromatidové", "sú chromozómy jednocromatidové", "sa jednochromatidove chromozómy zdvojujú na dvojchromatidové", "sú chromozómy zrážané do centrálnej roviny", "s chromozómy ďalej dešpiráizuju", "sa mikrotubuly deliaceho vretienka upínajú na centroméru každého chromozómu"] },
-    { id: 417, q: "V telofáze mitózy:", a: "bdef", options: ["sa chromozómy postupne špiralizujú", "sa chromozómy postupne dešpiralizujú", "sú chromozómy dvojchromatidové", "sú chromozómy jednochromatidové", "zaniká deliace vretienko", "sa mikrotrubuly deliaceho vretienka upínajú na centromeru každého chromozómu"] },
-    { id: 418, q: "Cytokinéza:", a: "f", options: ["je veda, ktorá skúma tvar a štruktúru buniek", "je rozdelenie jadra na dve dcérske bunky", "sa začína a končí rozdelením jadra na dve dcérske bunky", "je rozdelenie bunky na dve dcérske bunky", "sú súčasťou interfázy bunkového cyklu", "podnietuje vznik viacerých bunkových cyklov"] },
-    { id: 419, q: "Telové bunky človeka:", a: "bcde", options: ["sú haploidné", "sú diploidné", "majú 2n chromozómov", "majú n chromozómov", "je súčasťou interfázy", "je rozdelenie materskej bunky na dve samostatné dcérske bunky"] },
-    { id: 420, q: "Zygota:", a: "adf", options: ["je oploďnené vajíčko", "vzniká redukčným delením", "je zrelá pohlavná bunka", "má vlastnosť totipotencie", "je haploidná", "je diploidná"] },
-    { id: 421, q: "Karyokinéza je:", a: "ad", options: ["rozdelenie jadra na dve dcérske bunky", "rozdelenie bunky na dve dcérske bunky", "sú súčasťou interfázy bunkového cyklu", "sú súčasťou bunkového cyklu", "veda, ktorá študuje tvar a štruktúru buniek", "reprodukcia buniek"] },
-    { id: 422, q: "Nepriame delenie eukaryotických buniek sa nazýva:", a: "e", options: ["endomitóza", "reduplikácia", "amitóza", "meióza", "mitóza", "gametogenéza"] },
-    { id: 423, q: "Chromozómy sa skracujú a hrubnú v:", a: "f", options: ["interfáze", "protofáze", "telofáze", "anafáze", "cytokinéze", "profáze"] },
-    { id: 424, q: "Metafázové chromozómy sú:", a: "af", options: ["dvojchromatidové", "jednochromatidové", "niťovité", "mikroskopom nerozlíšiteľné", "zložené z dvoch homologických sesterských chromatid", "zložené z dvoch geneticky identických sesterských chromatid"] },
-    { id: 425, q: "Bunkové delenie:", a: "bdef", options: ["môže byť priame - mitóza", "je zvyčajne súčasťou M - fázy bunkového cyklu", "prebieha v interfáze bunkového cyklu", "zabezpečuje regeneráciu poškodených tkanív a orgánov", "zabezpečuje náhradu opotrebovaných buniek", "znamená reprodukciu buniek"] },
-    { id: 426, q: "Bunky, ktoré vznikli meiózou:", a: "abef", options: ["nie sú geneticky zhodné medzi sebou", "majú jednu chromozómovú sadu", "sú vždy geneticky zhodné medzi sebou", "majú dve chromozómové sady", "sú pohlavné bunky", "nie sú geneticky identické s materskou bunkou"] },
-    { id: 427, q: "Konečným výsledkom meiózy sú:", a: "bcf", options: ["štyri geneticky rovnaké bunky s haploidným počtom chromozómov", "štyri geneticky odlišné haploidné pohlavné bunky", "štyri bunky s haploidným počtom chromozómov", "štyri bivalenty", "štyri dcérske bunky geneticky zhodné s materskou bunkou", "štyri pohlavné bunky"] },
-    { id: 428, q: "Heterotypické delenie:", a: "bf", options: ["sa priebehom podobá mitóze", "je charakteristické redukciou počtu chromozómov na polovicu", "je druhé meiotické delenie", "nezaručuje rovnomerné rozdelenie genetického materiálu", "končí vznikom štyroch dcérskych haploidných buniek", "je prvé meiotické delenie"] },
-    { id: 429, q: "Redukčné delenie:", a: "bce", options: ["je priame bunkové delenie", "je meiotické delenie", "je špecializovaný spôsob delenia, výsledkom ktorého je vznik pohlavných buniek", "nezaručuje rovnomerné rozdelenie genetického materiálu do dcérskych buniek", "prebieha v dvoch po sebe nasledujúcich deleniach s odlišným priebehom", "prebieha v dvoch po sebe nasledujúcich deleniach s rovnakým priebehom"] },
-    { id: 430, q: "Homeotypické delenie:", a: "bd", options: ["je prvé meiotické delenie", "je druhé meiotické delenie", "má profázu I, metafázu I, anafázu I, telofázu I", "má profázu II, metafázu II, anafázu II, telofázu II", "je charakteristické zložitejším priebehom profázy, v ktorej dochádza ku crossing-overu", "nasleduje po krátkej interfáze, kedy dochádza k replikácii DNA"] },
-    { id: 431, q: "Proces postupného tvarového a funkčného odlíšenia buniek sa nazýva:", a: "bcf", options: ["stimulácia", "diferenciácia", "špecializácia", "reprodukcia", "autoreprodukcia a výsledkom sú špecializované bunky podľa tvaru a funkcie", "diferenciácia a výsledkom sú špecializované bunky podľa tvaru a funkcie"] },
-    { id: 432, q: "Bunkový cyklus:", a: "cde", options: ["sa označuje ako regeneračná doba bunky", "sa pri nedostatku živín v prostredí zastaví v S - fáze", "je kontrolovaný mechanizmami pôsobiacimi hlavne v G1 - fáze", "môže byť narušený niektorými vírusmi", "zahŕňa prípravné fázy G1 - postmitotickú a G2 - predmitotickú", "prokaryotických buniek má G1, S, G2 a M-fázu"] },
-    { id: 433, q: "Poradie všetkých fáz bunkového cyklu je nasledujúce:", a: "cef", options: ["profáza, metafáza, anafáza, telofáza", "heterotypické a homeotypické delenie", "G1, S, G2 , M", "predmitotická fáza, S- fáza, postmitotická fáza, M - fáza", "interfáza a M - fáza", "postmitotická fáza, S - fáza, predmitotická fázu, M - fáza"] },
-    { id: 434, q: "Interfáza:", a: "adef", options: ["je obdobie, keď sa bunka nedelí", "zahŕňa mitózu", "zahŕňa profázu, metafázu, anafázu, telofázu", "zahŕňa postmitotickú fázu, S - fázu a predmitotickú fázu", "zahŕňa hlavný kontrolný uzol celého bunkového cyklu", "je rastová fáza bunkového cyklu"] },
-    { id: 435, q: "G1-fáza bunkového cyklu:", a: "bcef", options: ["sa označuje ako predmitotická", "sa označuje ako postmitotická", "začína v okamihu vzniku dcérskej bunky", "začína v okamihu zániku dcérskej bunky", "je začiatkom vlastného bunkového cyklu dcérskej bunky", "je charakterizovaná rastovými procesmi"] },
-    { id: 436, q: "V G1-fáze:", a: "abf", options: ["prebieha syntéza bielkovín", "sa nachádza hlavný kontrolný uzol bunkového cyklu", "prebieha zdvojenie jadrových chromozómov", "sa bunka pripravuje na rozdelenie jadra", "sa nachádza kontrolný uzol karyokinézy", "dochádza k zmnoženiu bunkových štruktúr"] },
-    { id: 437, q: "S-fáza bunkového cyklu:", a: "d", options: ["zahŕňa kontrolný uzol syntézy RNA", "predstavuje fázu replikácie ribonukleových kyselín", "má kratšie trvanie ako M - fáza", "je charakterizovaná zdvojením jednochromatidových chromozómov", "je charakterizovaná tvorbou bunkových organel", "je charakterizovaná zdvojením dvojchromatidových chromozómov"] },
-    { id: 438, q: "Bielkoviny, ktoré sa syntetizujú v G1 - fáze sa využívajú najmä:", a: "bde", options: ["na tvorbu mitotického aparátu", "na tvorbu bunkových organel", "na tvorbu jednochromatidových chromozómov", "na rastové procesy v bunke", "na znásobenie bunkových štruktúr", "na tvorbu deliaceho vretienka"] },
-    { id: 439, q: "Kľúčovým procesom S - fázy je:", a: "abf", options: ["syntéza DNA", "zdvojenie jednochromatidových chromozómov", "rozdelenie jadrových chromozómov", "zdvojenie bunkových organel", "zdvojenie dvojchromatidových chromozómov", "znásobenie genetického materiálu bunky"] },
-    { id: 440, q: "Karyokinéza a cytokinéza prebiehajú:", a: "bc", options: ["v interfáze bunkového cyklu", "v M - fáze bunkového cyklu", "zvyčajne v telofáze mitózy", "v G2 - fáze bunkového cyklu", "v metafáze bunkového cyklu", "v postmitotickej fáze"] },
-    { id: 441, q: "Do interfázy bunkového cyklu patrí:", a: "abe", options: ["G2 - fáza", "G1 - fáza", "M - fáza", "mitóza", "S - fáza", "postmitotická G2 - fáza"] },
-    { id: 442, q: "Reguláciu bunkového cyklu môžu ovplyvniť':", a: "acdef", options: ["cytostatiká, ktoré spomaľujú alebo zastavujú bunkové delenie", "cytostatiká, ktoré stimulujú bunkové delenie", "vonkajšie faktory, napr. teplota", "niektoré vírusy, za vzniku rakoviny", "vonkajšie faktory, napr. dostatok živín v prostredí", "rastové hormóny"] },
-    { id: 443, q: "Bunková diferenciácia znamená:", a: "bcf", options: ["genetické odlíšenie somatických buniek", "morfologické odlíšenie buniek", "tvarové a funkčné odlíšenie buniek, ktoré začína už počas zárodočného vývinu organizmu", "tvarové a funkčné odlíšenie buniek až po narodení jedinca", "realizáciu kompletnej genetickej informácie vo všetkých bunkách", "špecializáciu buniek na určité základné funkcie v mnohobunkovom organizme"] },
-    { id: 444, q: "Endocytóza:", a: "abdf", options: ["je napr. pinocytóza", "je proces, pri ktorom dochádza k štrukturálnej prestavbe plazmatickej membrány", "je pasívny transport látok do bunky", "je aktívny transport látok do bunky", "je aktívny transport látok von z bunky", "je napr. fagocytóza"] },
-    { id: 445, q: "Bunkovou bariérou, ktorá selektívne prepúšť'a potrebné látky do bunky a von z bunky, je:", a: "bde", options: ["jadrová membrána", "plazmaléma", "bunková stena", "cytoplazmatická membrána", "plazmatická membrána", "cytoskelet"] },
-    { id: 446, q: "Pasívny transport látok cez plazmatickú membránu:", a: "adef", options: ["nevyžaduje spotrebu energie", "je napr. prenos glukózy a aminokyselín proti koncentračnému spádu", "zabezpečuje prenos látok proti koncentračnému spádu", "je napr. difúzia", "je napr. osmóza", "prebieha v smere koncentračného spádu"] },
-    { id: 447, q: "Hypotonické prostredie:", a: "acdef", options: ["je prostredie s nižšou koncentráciou osmoticky aktívnych častíc", "je prostredie s vyššou koncentráciou osmoticky aktívnych častíc", "spôsobuje plazmoptýzu živočíšnych buniek", "spôsobuje lýzu červených krviniek", "je napr. destilovaná voda", "podmieňuje osmotické nasávanie vody bunkou"] },
-    { id: 448, q: "Difúziou môžu cez biomembránu prechádzať':", a: "cdef", options: ["do bunky všetky látky", "z bunky všetky látky", "plyny", "etanol", "tie látky, ktorým ich štruktúra umožní prechod plazmatickou membránou", "voda"] },
-    { id: 449, q: "Rýchlosť jednoduchej difúzie cez cytoplazmatickú membránu závisí:", a: "de", options: ["od štrukturálnej prestavby plazmatickej membrány", "od množstva energie vo forme ATP", "od aktivity transportných bielkovín", "od rozdielu koncentrácie látky na oboch stranách membrány", "od koncentračného spádu látky na oboch stranách membrány", "od enzýmovej aktivity membrány"] },
-    { id: 450, q: "Osmotická lýza bunky nastáva v prostredí:", a: "be", options: ["izotonickom", "hypotonickom", "hypertonickom", "s vyššou koncentráciou osmoticky aktívnych častíc", "s nižšou koncentráciou osmoticky aktívnych častíc", "s rovnakou koncentráciou osmoticky aktívnych častíc"] },
-    { id: 451, q: "Bunka vytvára pseudopódie:", a: "bce", options: ["pri pinocytóze", "pomocou cytoskeletu", "pri fagocytóze", "pri osmóze", "pričom uzatvára fagocytované čiastočky do fagocytovej vakuoly", "pri exocytóze"] },
-    { id: 452, q: "Schopnost' bunky pohlcovat' mikroorganizmy sa nazýva:", a: "ce", options: ["diapedéza", "pinocytóza", "fagocytóza", "exocytóza", "endocytóza", "špecifická imunita"] },
-    { id: 453, q: "Živočíšna bunka v hypotonickom prostredí:", a: "bcde", options: ["sa zmrští", "praská", "podlieha plazmoptýze", "osmoticky nasáva vodu", "zväčšuje svoj objem", "stráca vodu"] },
-    { id: 454, q: "Živočíšna bunka v hypertonickom prostredí:", a: "acf", options: ["sa zmrští", "praská", "stráca vodu", "podlieha plazmoptýze", "aktívne transportuje molekuly vody von z bunky", "zmenšuje svoj objem"] },
-    { id: 455, q: "Aktívny transport cez cytoplazmatickú membránu umožňuje prenos:", a: "def", options: ["vody", "plynov", "etanol", "iónov vápnika do bunky", "látok pomocou transportných bielkovín", "látok spravidla proti koncentračnému spád"] },
-    { id: 456, q: "Látky s mimobunkovou funkciou sa z bunky vylučujú:", a: "bd", options: ["endocytozou", "exocytozou", "kanalikmi v plazamatickej membráne", "pomocou exocytozovych mechurikov", "osmoticky", "lymfocytozou"] }
-];
-
-const chemQs = [
-    { id: 353, q: "Stužovanie tukov nie je:", a: "bdf", options: ["hydrogenácia", "dehydrogenácia", "adícia", "zvyšovanie počtu dvojitých väzieb", "znižovanie počtu dvojitých väzieb", "zmena tuhého skupenstva na kvapalné"] },
-    { id: 354, q: "Biologická hodnota jedlých olejov sa posudzuje najmä podľa:", a: "bd", options: ["čísla kyslosti", "podľa obsahu omega-3 a omega-6 mastných kyselín", "obsahu peroxolipidov", "obsahu vyšších nenasýtených mastných kyselín", "obsahu vitamínu C", "prítomnosti vláknin"] },
-    { id: 355, q: "Ktorá z kyselín obsahuje v molekule viac ako jednu dvojitú väzbu?", a: "aef", options: ["arachidónová", "maslová", "steárová", "olejová", "linolová", "linolénová"] },
-    { id: 356, q: "Zmydelňovanie tukov je:", a: "aef", options: ["alkalická hydrolýza", "hydrogenácia", "hydratácia", "kyslá hydrolýza", "reakcia s NaOH", "reakcia s KOH"] },
-    { id: 357, q: "Vosky sú:", a: "ace", options: ["estery vyšších mastných kyselín a vyšších jednosýtnych alkoholov", "estery nižších mastných kyselín a vyšších alkoholov", "napr. lanolín a vorvaňovina", "estery sfingozínu a vyšších mastných kyselín", "jednoduché lipidy", "látky izolované z ropy"] },
-    { id: 358, q: "Žlčové kyseliny sú deriváty:", a: "bdf", options: ["terpénov", "steránu", "aromatických kyselín", "cholesterolu", "tetrapyrolov", "cyklopentánoperhydrofenantrénu"] },
-    { id: 359, q: "Vyznačte zlúčeniny s chemickou štruktúrou mydla?", a: "ace", options: ["palmitooleát draselný", "metylstearát", "stearan sodný", "fenolát sodný", "palmitát draselný", "octan etylový"] },
-    { id: 360, q: "Hydrofóbnymi vlastnosťami sa vyznačujú:", a: "acf", options: ["lipidy", "karboxylový koniec mastnej kyseliny", "vitamíny A a D", "látky rozpustné vo vode", "polárne látky", "alifatické reťazce mastných kyselín"] },
-    { id: 361, q: "Z vyšších karboxylových kyselín sú pre ľudský organizmus nevyhnutné (esenciálne):", a: "abe", options: ["niektoré polynenasýtené mastné kyseliny", "kyselina linolénová", "kyselina steárová", "kyselina palmitová", "kyselina linolová", "s jednou dvojitou väzbou"] },
-    { id: 362, q: "Molekula fosfolipidov môže obsahovať:", a: "acde", options: ["glycerol", "kyselinu asparágovú", "kyselinu fosforečnú", "serín", "HO-CH2-CH2-NH2", "acetylcholin"] },
-    { id: 363, q: "Komplexné (zložené) lipidy sú dôležitou súčasťou:", a: "abc", options: ["bunkových membrán", "nervových buniek", "mozgového tkaniva", "slín", "moča", "svalových bielkovín"] },
-    { id: 364, q: "Izoprenová jednotka sa nachádza v štruktúrach:", a: "aef", options: ["terpenov", "vitamínov rozpustných vo vode", "bielkovín", "nukleových kyselín", "karotenoidov", "vitamínu A"] },
-    { id: 365, q: "Ktoré tvrdenie o lipidoch je nepravdivé?", a: "aef", options: ["nikdy nie sú súčasťou bunky", "majú stavebnú funkciu v biologických membránach", "sú významným zdrojom telesnej energie", "pomáhajú rozpúšťať významné nepolárne látky", "majú silné hydrofilné vlastnosti", "nenachádzajú sa v rastlinách"] },
-    { id: 366, q: "Stužovanie tukov je:", a: "cef", options: ["lisovanie", "dehydrogenácia", "hydrogenácia", "oxidácia", "redukcia", "adícia vodíka na násobné väzby mastných kyselín"] },
-    { id: 367, q: "Medzi terpény nepatria:", a: "bef", options: ["silice", "parafíny", "terpénové oleje", "balzámy", "vosky", "chlorofyl"] },
-    { id: 368, q: "Ktoré prírodné látky nepatria medzi steroidy:", a: "bdf", options: ["cholesterol", "aminokyseliny", "kortikoidy", "tetrapyroly", "pohlavné hormóny", "nukleotidy"] },
-    { id: 369, q: "O jednoduchých lipidoch platí:", a: "acd", options: ["obsahujú esterovú väzbu", "obsahujú makroergické väzby", "steroidy", "môžu obsahovať 1 až 3 mastné kyseliny", "sú deriváty trojsýtneho alkoholu", "obsahovať iba 1 mastnú kyselinu"] },
-    { id: 370, q: "Triacylglyceroly obsahujú zvyčajne:", a: "ace", options: ["kyselinu linolovú", "kyselinu linolénovú", "tri mastné kyseliny", "trikarboxylovú kyselinu", "kyselinu olejovú", "kyselinu fosforečnú"] },
-    { id: 371, q: "Medzi nasýtené mastné kyseliny patrí:", a: "aef", options: ["kyselina stearová", "kyselina linolová", "kyselina olejová", "kyselina palmitová", "kyselina myristová", "kyselina maslová"] },
-    { id: 372, q: "Označte pravdivé tvrdenie o acylglyceroloch:", a: "ade", options: ["patria medzi jednoduché lipidy", "patria medzi tuky", "patria k steroidom", "môžu obsahovať 1 až 3 mastné kyseliny", "sú deriváty trojsýtneho alkoholu", "obsahovať iba 1 mastnú kyselinu"] },
-    { id: 373, q: "Správne označte vzorec kyseliny stearovej:", a: "adf", options: ["C17H35 COOH", "CH3-(CH2)14-COOH", "C15H31 COOH", "C18H36O2", "CH3-(CH2)16-COOH", "CH3-(CH2)16-COOH"] },
-    { id: 374, q: "Správne označte počet uhlíkov a dvojitých väzieb v kyselinách:", a: "ace", options: ["olejovej 18; 1", "linolovej 16; 2", "palmitovej 16; 0", "stearovej 18; 0", "arachidónová 20; 4", "myristovej 14; 0"] },
-    { id: 375, q: "O kyseline linolénovej platí:", a: "cdf", options: ["má vzorec: CH3(CH2)5(CH=CH)2(CH2)7COOH", "obsahuje 1 dvojitú väzbu", "má vzorec: CH3(CH2-CH=CH)3(CH2)7COOH", "obsahuje 3 dvojité väzby", "je nasýtená mastná kyselina", "môže sa redukovať"] },
-    { id: 376, q: "Cholesterol je:", a: "ae", options: ["súčasť biomembrán", "mužský pohlavný hormón", "ženský pohlavný hormón", "žlčové farbivo", "hydroxyderivát", "listové farbivo"] },
-    { id: 377, q: "Žlčové kyseliny:", a: "adf", options: ["môžu byť primárne a sekundárne", "sú deriváty vyšších alifatických kyselín", "sú odvodené od hému", "sa syntetizujú z cholesterolu", "sú súčasťou biomembrán", "zlepšujú trávenie tukov"] }
-];
-
-const storage = {
-    get(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; } },
-    set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-};
-
-let state = {
-    mode: 'bio', 
-    testType: 'gen', 
-    count: 20, 
-    order: 'random', // TOTO TERAZ ZNAMENA NAHODNE ODPOVEDE (options), NIE OTAZKY
-    currentTest: [], 
-    userAns: {}, 
-    starred: storage.get('meditest_starred', []),
-    errors: storage.get('meditest_errors', [])
-};
-
-const test = {
-    updateZoom(v) { document.documentElement.style.setProperty('--zoom', v); },
-    toggleTheme() { 
-        const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', t);
-    },
-    
-    // 1. OTVORIŤ MENU (KROK 1)
-    openSetup(m) { 
-        state.mode = m; 
-        document.getElementById('setup-modal').classList.remove('hidden'); 
-        document.getElementById('step-mode').classList.remove('hidden');
-        document.getElementById('step-config').classList.add('hidden');
-    },
-
-    // 2. VYBRAŤ TYP TESTU A PREJSŤ NA KROK 2
-    selectMode(type) {
-        state.testType = type;
-        document.getElementById('step-mode').classList.add('hidden');
-        document.getElementById('step-config').classList.remove('hidden');
-
-        const setGen = document.getElementById('settings-gen');
-        const setInfo = document.getElementById('settings-info');
-        const desc = document.getElementById('mode-desc');
-        const title = document.getElementById('config-title');
-
-        if(type === 'gen') {
-            title.innerText = "Generovať test";
-            setGen.classList.remove('hidden');
-            setInfo.classList.add('hidden');
-            this.renderCountBtns();
-        } else {
-            setGen.classList.add('hidden');
-            setInfo.classList.remove('hidden');
-            
-            const poolSize = this.getPool(type).length;
-            
-            if(type === 'err') {
-                title.innerText = "Test z chýb";
-                desc.innerText = `Vyberie otázky, ktoré si v minulosti urobil zle. Nájdených otázok: ${poolSize}`;
+    <script>
+        // User Data Management
+        class User {
+            constructor(email, name, isPremium = false) {
+                this.email = email;
+                this.name = name;
+                this.isPremium = isPremium;
+                this.quizzesTaken = 0;
+                this.correctAnswers = 0;
+                this.fireStreak = 0;
+                this.lastQuizDate = null;
             }
-            if(type === 'star') {
-                title.innerText = "Hviezdičky";
-                desc.innerText = `Vyberie len otázky označené hviezdičkou. Nájdených otázok: ${poolSize}`;
+
+            getAccuracy() {
+                return this.quizzesTaken > 0 ? Math.round((this.correctAnswers / this.quizzesTaken) * 100) : 0;
             }
-            if(type === 'all') {
-                title.innerText = "Učenie sa";
-                desc.innerText = `Prejdeš všetky dostupné otázky z tejto kategórie rad radom (${poolSize} otázok).`;
+
+            updateStreak() {
+                const today = new Date().toDateString();
+                const lastDate = this.lastQuizDate ? new Date(this.lastQuizDate).toDateString() : null;
+
+                if (lastDate !== today) {
+                    if (lastDate === new Date(Date.now() - 86400000).toDateString()) {
+                        this.fireStreak++;
+                    } else {
+                        this.fireStreak = 1;
+                    }
+                    this.lastQuizDate = new Date().toISOString();
+                }
             }
         }
-    },
 
-    backToModes() {
-        document.getElementById('step-mode').classList.remove('hidden');
-        document.getElementById('step-config').classList.add('hidden');
-    },
+        let currentUser = null;
+        const users = JSON.parse(localStorage.getItem('meditest_users')) || [];
 
-    getPool(type) {
-        let base = state.mode === 'bio' ? [...bioQs] : (state.mode === 'chem' ? [...chemQs] : [...bioQs, ...chemQs]);
-        if (type === 'err') return base.filter(q => state.errors.includes(q.id));
-        if (type === 'star') return base.filter(q => state.starred.includes(q.id));
-        return base;
-    },
-
-    renderCountBtns() {
-        const counts = [5, 10, 20, 50, 'všetky'];
-        const container = document.getElementById('count-btns');
-        container.innerHTML = counts.map(c => `<button class="count-btn ${state.count === (c==='všetky'?9999:c) ? 'active' : ''}" onclick="test.setCount('${c}', this)">${c}</button>`).join('');
-    },
-    
-    setCount(c, btn) {
-        state.count = c === 'všetky' ? 9999 : parseInt(c);
-        document.getElementById('custom-cnt-input').value = "";
-        document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-    },
-
-    setCustomCount(val) {
-        const n = parseInt(val);
-        if(n > 0) {
-            state.count = n;
-            document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+        // Authentication Functions
+        function openLoginModal() {
+            closeRegisterModal();
+            document.getElementById('loginModal').classList.add('show');
         }
-    },
 
-    setOrder(o) {
-        state.order = o;
-        document.getElementById('ord-random').classList.toggle('active', o === 'random');
-        document.getElementById('ord-orig').classList.toggle('active', o === 'original');
-    },
-    closeSetup() { document.getElementById('setup-modal').classList.add('hidden'); },
-    
-    toggleStar(id, el) {
-        if (event) event.stopPropagation();
-        if(state.starred.includes(id)) {
-            state.starred = state.starred.filter(x => x !== id);
-            el.classList.remove('active');
-            el.classList.replace('fas', 'far');
-        } else {
-            state.starred.push(id);
-            el.classList.add('active');
-            el.classList.replace('far', 'fas');
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('show');
+            document.getElementById('loginMessage').innerHTML = '';
         }
-        storage.set('meditest_starred', state.starred);
-    },
 
-    start() {
-        this.closeSetup();
-        state.userAns = {};
-        
-        let pool = this.getPool(state.testType);
-        if (pool.length === 0) return alert("Pre tento výber nie sú dostupné žiadne otázky!");
-
-        if (state.testType === 'gen') {
-             // ZMENA: Otázky sa vždy premiešajú
-             pool.sort(() => Math.random() - 0.5);
-             state.currentTest = pool.slice(0, Math.min(state.count, pool.length));
-        } else if (state.testType === 'all') {
-             pool.sort((a,b) => a.id - b.id);
-             state.currentTest = pool;
-        } else {
-             state.currentTest = pool;
-             // ZMENA: Aj tu premiešame otázky (okrem módu 'all')
-             state.currentTest.sort(() => Math.random() - 0.5);
+        function openRegisterModal() {
+            closeLoginModal();
+            document.getElementById('registerModal').classList.add('show');
         }
-        
-        this.renderTest();
-        document.getElementById('view-dash').classList.add('hidden');
-        document.getElementById('view-test').classList.remove('hidden');
-        document.getElementById('test-footer').classList.remove('hidden');
-        window.scrollTo(0,0);
-    },
 
-    renderTest() {
-        const cont = document.getElementById('view-test');
-        cont.innerHTML = state.currentTest.map((q, i) => {
-            const isStarred = state.starred.includes(q.id);
-            
-            // Priprava odpovedi s ID (aby sme vedeli ktora je ktora po premiesani)
-            let optsWithId = q.options.map((txt, idx) => ({ 
-                txt, 
-                id: String.fromCharCode(97 + idx) // 'a', 'b', 'c'...
+        function closeRegisterModal() {
+            document.getElementById('registerModal').classList.remove('show');
+            document.getElementById('registerMessage').innerHTML = '';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const userIndex = users.findIndex(u => u.email === email && u.password === password);
+
+            if (userIndex !== -1) {
+                currentUser = new User(users[userIndex].email, users[userIndex].name, users[userIndex].isPremium);
+                currentUser.quizzesTaken = users[userIndex].quizzesTaken || 0;
+                currentUser.correctAnswers = users[userIndex].correctAnswers || 0;
+                currentUser.fireStreak = users[userIndex].fireStreak || 0;
+                currentUser.lastQuizDate = users[userIndex].lastQuizDate;
+
+                localStorage.setItem('meditest_currentUser', JSON.stringify({
+                    email: currentUser.email,
+                    name: currentUser.name,
+                    isPremium: currentUser.isPremium
+                }));
+
+                showMessage('Login successful!', 'success');
+                closeLoginModal();
+                updateUI();
+            } else {
+                showMessage('Invalid email or password', 'error', 'loginMessage');
+            }
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (users.some(u => u.email === email)) {
+                showMessage('Email already registered', 'error', 'registerMessage');
+                return;
+            }
+
+            const newUser = {
+                name,
+                email,
+                password,
+                isPremium: false,
+                quizzesTaken: 0,
+                correctAnswers: 0,
+                fireStreak: 0,
+                lastQuizDate: null
+            };
+
+            users.push(newUser);
+            localStorage.setItem('meditest_users', JSON.stringify(users));
+
+            currentUser = new User(email, name, false);
+            localStorage.setItem('meditest_currentUser', JSON.stringify({
+                email: currentUser.email,
+                name: currentUser.name,
+                isPremium: currentUser.isPremium
             }));
 
-            // Premiesanie odpovedi ak je nastaveny rezim 'random'
-            if(state.order === 'random') {
-                optsWithId.sort(() => Math.random() - 0.5);
-            }
-
-            return `
-            <div class="q-card" id="q-${i}">
-                <i class="${isStarred ? 'fas' : 'far'} fa-star star-toggle ${isStarred ? 'active' : ''}" onclick="test.toggleStar(${q.id}, this)"></i>
-                <h3>${i+1}. ${q.q}</h3>
-                ${optsWithId.map((o, oi) => {
-                    // Visualne pismenko (A, B, C...) podla poradia zobrazenia
-                    const visualChar = String.fromCharCode(97 + oi);
-                    // data-orig obsahuje skutocne ID odpovede ('a', 'b'...) pre vyhodnotenie
-                    return `<div class="opt" data-orig="${o.id}" onclick="test.select(${i}, '${o.id}', this)">
-                        <span style="width:30px">${visualChar.toUpperCase()})</span> ${o.txt}
-                    </div>`;
-                }).join('')}
-            </div>
-        `}).join('');
-    },
-
-    select(qi, char, el) {
-        if(!state.userAns[qi]) state.userAns[qi] = "";
-        if(state.userAns[qi].includes(char)) {
-            state.userAns[qi] = state.userAns[qi].replace(char, "");
-            el.classList.remove('selected');
-        } else {
-            state.userAns[qi] += char;
-            el.classList.add('selected');
+            showMessage('Account created successfully!', 'success');
+            closeRegisterModal();
+            updateUI();
         }
-        this.updateProgress();
-    },
 
-    updateProgress() {
-        const done = Object.keys(state.userAns).filter(k => state.userAns[k].length > 0).length;
-        const per = Math.round((done / state.currentTest.length) * 100);
-        const btn = document.getElementById('finish-trigger');
-        btn.innerText = per + "%";
-        btn.style.width = Math.max(100, per * 2) + "px";
-    },
+        // UI Update Functions
+        function updateUI() {
+            const authButtons = document.getElementById('authButtons');
+            const userInfo = document.getElementById('userInfo');
+            const statsContainer = document.getElementById('statsContainer');
 
-    triggerConfetti() {
-        for(let i=0; i<50; i++) {
-            const el = document.createElement('div');
-            el.innerText = '🥳';
-            el.className = 'confetti';
-            el.style.left = Math.random() * 100 + 'vw';
-            el.style.animationDuration = (Math.random() * 2 + 2) + 's';
-            el.style.fontSize = (Math.random() * 20 + 20) + 'px';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 4000);
-        }
-    },
+            if (currentUser) {
+                authButtons.style.display = 'none';
+                userInfo.style.display = 'flex';
+                statsContainer.style.display = 'grid';
 
-    finish() {
-        let correct = 0;
-        state.currentTest.forEach((q, i) => {
-            const user = (state.userAns[i] || "").split('').sort().join('');
-            const real = q.a.split('').sort().join('');
-            
-            if(user === real) {
-                correct++;
-                if(state.errors.includes(q.id)) state.errors = state.errors.filter(x => x !== q.id);
-            } else {
-                if(!state.errors.includes(q.id)) state.errors.push(q.id);
-            }
-        });
-        
-        storage.set('meditest_errors', state.errors);
-        const score = Math.round((correct / state.currentTest.length) * 100);
-        document.getElementById('res-score').innerText = score + "%";
-        
-        // ZOBRAZIŤ MODAL
-        document.getElementById('res-modal').classList.remove('hidden');
+                document.getElementById('userDisplay').textContent = `👤 ${currentUser.name}`;
 
-        // SPUSTIŤ KONFETY AK JE SKÓRE NAD 80%
-        if(score > 80) {
-            this.triggerConfetti();
-        }
-    },
-
-    reviewErrors() {
-        document.getElementById('res-modal').classList.add('hidden');
-        document.getElementById('test-footer').classList.add('hidden');
-
-        state.currentTest.forEach((q, i) => {
-            const card = document.getElementById(`q-${i}`);
-            const user = state.userAns[i] || "";
-            const real = q.a;
-            
-            const opts = card.querySelectorAll('.opt');
-            opts.forEach(optEl => {
-                // ZISKAME SKUTOCNE ID ODPOVEDE Z DATA ATRIBUTU (lebo poradie moze byt premiesane)
-                const char = optEl.getAttribute('data-orig');
-                
-                optEl.onclick = null;
-                optEl.style.cursor = "default";
-                optEl.classList.remove('selected');
-
-                const isSelected = user.includes(char);
-                const isCorrect = real.includes(char);
-
-                if (isSelected && isCorrect) {
-                    optEl.classList.add('correct-hit');
-                    optEl.innerHTML += '<i class="fas fa-check opt-icon"></i>';
-                } 
-                else if (isSelected && !isCorrect) {
-                    optEl.classList.add('wrong-hit');
-                    optEl.innerHTML += '<i class="fas fa-times opt-icon"></i>';
-                } 
-                else if (!isSelected && isCorrect) {
-                    optEl.classList.add('missed-hit');
-                    optEl.innerHTML += '<span class="opt-icon" style="font-size:0.8rem; opacity:0.8">(Mal si označiť)</span>';
+                if (currentUser.fireStreak > 0) {
+                    document.getElementById('fireStreak').style.display = 'flex';
+                    document.getElementById('streakCount').textContent = currentUser.fireStreak;
                 }
+
+                if (currentUser.isPremium) {
+                    document.getElementById('premiumBadge').style.display = 'block';
+                    document.getElementById('premiumSection').style.display = 'none';
+                    enablePremiumQuizzes();
+                }
+
+                updateStats();
+            } else {
+                authButtons.style.display = 'flex';
+                userInfo.style.display = 'none';
+                statsContainer.style.display = 'none';
+                document.getElementById('premiumSection').style.display = 'block';
+                disablePremiumQuizzes();
+            }
+        }
+
+        function updateStats() {
+            if (currentUser) {
+                document.getElementById('quizzesTaken').textContent = currentUser.quizzesTaken;
+                document.getElementById('correctAnswers').textContent = currentUser.correctAnswers;
+                document.getElementById('accuracyScore').textContent = currentUser.getAccuracy() + '%';
+                document.getElementById('currentStreak').textContent = currentUser.fireStreak;
+            }
+        }
+
+        function enablePremiumQuizzes() {
+            const premiumCards = ['microbiologyCard', 'biochemistryCard', 'physiologyCard'];
+            premiumCards.forEach(id => {
+                document.getElementById(id).style.opacity = '1';
+                document.getElementById(id).style.pointerEvents = 'auto';
+                document.getElementById(id).querySelector('p').textContent = 
+                    document.getElementById(id).querySelector('h3').textContent.split(' ')[1] + ' questions';
             });
+        }
+
+        function disablePremiumQuizzes() {
+            const premiumCards = ['microbiologyCard', 'biochemistryCard', 'physiologyCard'];
+            premiumCards.forEach(id => {
+                document.getElementById(id).style.opacity = '0.6';
+                document.getElementById(id).style.pointerEvents = 'none';
+            });
+        }
+
+        // Premium Upgrade
+        function upgradeToPremium() {
+            if (!currentUser) {
+                openLoginModal();
+                return;
+            }
+
+            currentUser.isPremium = true;
+            const userIndex = users.findIndex(u => u.email === currentUser.email);
+            if (userIndex !== -1) {
+                users[userIndex].isPremium = true;
+                localStorage.setItem('meditest_users', JSON.stringify(users));
+            }
+
+            localStorage.setItem('meditest_currentUser', JSON.stringify({
+                email: currentUser.email,
+                name: currentUser.name,
+                isPremium: true
+            }));
+
+            showMessage('Successfully upgraded to Premium! 🎉', 'success');
+            updateUI();
+        }
+
+        // Quiz Functions
+        function startQuiz(subject) {
+            if (!currentUser) {
+                openLoginModal();
+                return;
+            }
+
+            if (!currentUser.isPremium && ['microbiology', 'biochemistry', 'physiology'].includes(subject)) {
+                showMessage('This quiz is premium only. Upgrade to access!', 'error');
+                return;
+            }
+
+            currentUser.updateStreak();
+            currentUser.quizzesTaken++;
+            currentUser.correctAnswers += Math.floor(Math.random() * 10) + 5;
+
+            const userIndex = users.findIndex(u => u.email === currentUser.email);
+            if (userIndex !== -1) {
+                users[userIndex].quizzesTaken = currentUser.quizzesTaken;
+                users[userIndex].correctAnswers = currentUser.correctAnswers;
+                users[userIndex].fireStreak = currentUser.fireStreak;
+                users[userIndex].lastQuizDate = currentUser.lastQuizDate;
+                localStorage.setItem('meditest_users', JSON.stringify(users));
+            }
+
+            updateStats();
+            showMessage(`Quiz started: ${subject.charAt(0).toUpperCase() + subject.slice(1)} 📝`, 'success');
+        }
+
+        // Message Display
+        function showMessage(text, type, elementId = 'messageContainer') {
+            const container = document.getElementById(elementId);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type} show`;
+            messageDiv.textContent = text;
+
+            if (elementId === 'messageContainer') {
+                container.innerHTML = '';
+            }
+
+            container.appendChild(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Modal Close on Outside Click
+        window.onclick = function(event) {
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+
+            if (event.target === loginModal) {
+                closeLoginModal();
+            }
+            if (event.target === registerModal) {
+                closeRegisterModal();
+            }
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedUser = localStorage.getItem('meditest_currentUser');
+            if (savedUser) {
+                const userData = JSON.parse(savedUser);
+                currentUser = new User(userData.email, userData.name, userData.isPremium);
+
+                const userIndex = users.findIndex(u => u.email === userData.email);
+                if (userIndex !== -1) {
+                    currentUser.quizzesTaken = users[userIndex].quizzesTaken || 0;
+                    currentUser.correctAnswers = users[userIndex].correctAnswers || 0;
+                    currentUser.fireStreak = users[userIndex].fireStreak || 0;
+                    currentUser.lastQuizDate = users[userIndex].lastQuizDate;
+                }
+            }
+            updateUI();
         });
-
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'end-actions';
-        actionsDiv.innerHTML = `
-            <h3>Čo ďalej? 🤔</h3>
-            <button class="big-action-btn btn-new" onclick="test.startNew()">🚀 Nový test</button>
-            <button class="big-action-btn btn-retry" onclick="test.retryErrors()">🔄 Opraviť chyby</button>
-            <button onclick="test.goHome()" style="margin-top:10px; background:transparent; border:none; color:var(--text); cursor:pointer">Späť do menu 🏠</button>
-        `;
-        document.getElementById('view-test').appendChild(actionsDiv);
-        
-        window.scrollTo(0,0);
-    },
-
-    retryErrors() {
-        const errors = state.currentTest.filter((q, i) => {
-            const user = (state.userAns[i] || "").split('').sort().join('');
-            const real = q.a.split('').sort().join('');
-            return user !== real;
-        });
-        
-        if(errors.length === 0) return alert("V tomto teste si nemal žiadne chyby! 🎉");
-        
-        state.currentTest = errors;
-        state.userAns = {};
-        this.renderTest();
-        document.getElementById('test-footer').classList.remove('hidden');
-        window.scrollTo(0,0);
-        this.updateProgress();
-    },
-
-    startNew() {
-        this.openSetup(state.mode);
-        document.getElementById('view-test').classList.add('hidden');
-        document.getElementById('test-footer').classList.add('hidden');
-    },
-
-    goHome() {
-        document.getElementById('view-dash').classList.remove('hidden');
-        document.getElementById('view-test').classList.add('hidden');
-        document.getElementById('test-footer').classList.add('hidden');
-        document.getElementById('res-modal').classList.add('hidden');
-        document.getElementById('setup-modal').classList.add('hidden');
-        window.scrollTo(0,0);
-    }
-};
-
-test.renderCountBtns();
-</script>
-
+    </script>
 </body>
 </html>
